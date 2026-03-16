@@ -1,0 +1,24 @@
+/* Active icon in mobile top bar → purple (#7C3AED) */
+.mobile-nav-active img {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(89%)
+          saturate(1500%) hue-rotate(249deg) brightness(95%);
+}
+
+/* Default mobile top bar icons: black */
+.mobile-topbar-icon {
+  filter: brightness(0);
+  transition: filter 0.2s ease;
+}
+
+/* Logout icon in mobile top bar: always red (#EF4444) */
+.logout-topbar-icon {
+  filter: brightness(0) saturate(100%) invert(40%) sepia(90%)
+          saturate(700%) hue-rotate(330deg) brightness(100%);
+  transition: filter 0.2s ease;
+}
+
+/* Logout in mobile top bar: always red when active */
+a[aria-label="Logout"].mobile-nav-active img {
+  filter: brightness(0) saturate(100%) invert(40%) sepia(90%)
+          saturate(700%) hue-rotate(330deg) brightness(100%);
+}

@@ -1,0 +1,494 @@
+<div class="preview-shell">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+  <header class="preview-header">
+    <button class="btn-back" (click)="goBack()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back
+    </button>
+
+    <div class="header-title">
+      <h1>{{ contract?.judulKontrak || 'Contract Preview' }}</h1>
+      <div class="header-meta">
+        <span class="status-chip" [class.chip-submitted]="contract?.status === 'Submitted'"
+              [class.chip-accepted]="contract?.status === 'Accepted'">{{ contract?.status }}</span>
+        <span *ngIf="contract?.customer" class="dot">·</span>
+        <span *ngIf="contract?.customer" class="meta-id">{{ contract?.customer }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button *ngIf="!isReviewer" class="btn-icon" title="Edit form" (click)="openForm()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Edit
+      </button>
+      <button class="btn-icon" *ngIf="selectedFile" (click)="downloadFile()" title="Download document">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </button>
+      <!-- Reviewer-only approval button -->
+      <button *ngIf="isReviewer" class="btn-review-action" (click)="showApprovalPanel = true" title="Submit review decision">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        Review Action
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ BODY ════════════════════════════════════════════════════════ -->
+  <div class="preview-body">
+
+    <!-- ── LEFT: Document Viewer ──────────────────────────────────── -->
+    <section class="doc-panel">
+
+      <!-- File tab bar -->
+      <div class="file-tabs" *ngIf="contract?.fileUploads?.length">
+        <button *ngFor="let f of contract!.fileUploads"
+                (click)="selectFile(f)"
+                [class.tab-active]="selectedFile?.name === f.name"
+                class="file-tab">
+          <!-- icon -->
+          <svg *ngIf="f.name.toLowerCase().endsWith('.pdf')" width="12" height="12"
+               fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <svg *ngIf="f.name.toLowerCase().endsWith('.doc') || f.name.toLowerCase().endsWith('.docx')"
+               width="12" height="12" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <span class="tab-name">{{ f.name }}</span>
+          <span class="tab-size">{{ formatSize(f.size) }}</span>
+          <span *ngIf="selectedFile?.name === f.name && isLocalCopy" class="tab-local-badge">local</span>
+        </button>
+      </div>
+
+      <!-- Viewer area -->
+      <div class="viewer-area">
+
+        <!-- No documents attached -->
+        <div *ngIf="!contract?.fileUploads?.length" class="viewer-empty">
+          <svg width="48" height="48" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <p>No documents attached to this contract.</p>
+        </div>
+
+        <!-- Loading spinner -->
+        <div *ngIf="isLoadingDoc" class="viewer-empty">
+          <svg class="spin" width="36" height="36" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="#e0e7ff" stroke-width="4"/>
+            <path d="M4 12a8 8 0 018-8" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p style="color:#64748b;font-size:13px">Loading document…</p>
+        </div>
+
+        <!-- Local copy banner -->
+        <div *ngIf="isLocalCopy && !isLoadingDoc" class="local-copy-banner">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Serving from local cache &mdash; server path not yet accessible
+        </div>
+
+        <!-- Error -->
+        <div *ngIf="docLoadError && !isLoadingDoc" class="viewer-fallback">
+          <svg width="44" height="44" fill="none" stroke="#f87171" stroke-width="1.5" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r=".5" fill="#f87171"/>
+          </svg>
+          <p class="fb-title" style="color:#ef4444">Cannot load document</p>
+          <p class="fb-sub">{{ docLoadError }}</p>
+          <button *ngIf="selectedFile" (click)="downloadFile()" class="btn-dl">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download instead
+          </button>
+        </div>
+
+        <!-- PDF embed -->
+        <iframe *ngIf="isPdf(selectedFile?.name ?? '') && safePdfUrl && !isLoadingDoc && !docLoadError"
+                [src]="safePdfUrl"
+                class="doc-iframe">
+        </iframe>
+
+        <!-- PDF no URL -->
+        <div *ngIf="isPdf(selectedFile?.name ?? '') && !safePdfUrl && !isLoadingDoc && !docLoadError && selectedFile"
+             class="viewer-fallback">
+          <svg width="52" height="52" fill="none" stroke="#94a3b8" stroke-width="1.2" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <p class="fb-title">No document URL available</p>
+          <p class="fb-sub">{{ selectedFile!.name }}</p>
+          <p class="fb-hint">Re-submit the contract to store the server path.</p>
+        </div>
+
+        <!-- DOCX visual rendering (with HTML fallback) -->
+        <div *ngIf="isDocx(selectedFile?.name ?? '') && !isLoadingDoc && !docLoadError"
+             class="doc-html-view">
+          <div #docxContainer class="docx-render-host" [class.docx-render-ready]="docxRendered"></div>
+          <div *ngIf="!docxRendered && docHtml" [innerHTML]="docHtml"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── RIGHT: Review Panel ─────────────────────────────────── -->
+    <aside class="review-panel">
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button (click)="activeTab='annotations'"
+                [class.tab-bar-active]="activeTab === 'annotations'"
+                class="tab-bar-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" viewBox="0 0 24 24">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          AI Findings
+          <span *ngIf="annotations.length" class="tab-count">{{ annotations.length }}</span>
+        </button>
+        <button (click)="activeTab='docComments'"
+                [class.tab-bar-active]="activeTab === 'docComments'"
+                class="tab-bar-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
+          </svg>
+          Doc Annotations
+          <span *ngIf="docComments.length" class="tab-count">{{ docComments.length }}</span>
+        </button>
+        <button (click)="activeTab='comments'"
+                [class.tab-bar-active]="activeTab === 'comments'"
+                class="tab-bar-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Approval Log
+          <span *ngIf="contract?.approvalLog?.length" class="tab-count">{{ contract?.approvalLog?.length }}</span>
+        </button>
+      </div>
+
+      <!-- ── AI Findings Tab ────────────────────────────────────── -->
+      <div *ngIf="activeTab === 'annotations'" class="annotations-scroll">
+
+        <!-- AI status badge -->
+        <div *ngIf="selectedFile?.aiStatus" class="ai-status-bar">
+          <svg width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="2"
+               stroke-linecap="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+          </svg>
+          AI verdict: <strong>{{ selectedFile!.aiStatus }}</strong>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!annotations.length" class="panel-empty">
+          <svg width="38" height="38" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <p>No AI findings for this document.</p>
+          <p class="panel-empty-sub">Submit the contract to run AI verification.</p>
+        </div>
+
+        <!-- Finding cards -->
+        <div *ngFor="let a of annotations; let i = index" class="finding-card">
+          <div class="finding-header">
+            <span class="finding-num">{{ i + 1 }}</span>
+            <span class="finding-topic">{{ a.Topik }}</span>
+          </div>
+          <div class="finding-posisi" [style.color]="posisiColor(a.Posisi)"
+               [style.background]="posisiBg(a.Posisi)">
+            {{ a.Posisi }}
+          </div>
+          <p class="finding-desc" *ngIf="a.deskripsi">{{ a.deskripsi }}</p>
+        </div>
+      </div>
+
+      <!-- ── Doc Annotations Tab ────────────────────────────────── -->
+      <div *ngIf="activeTab === 'docComments'" class="annotations-scroll">
+
+        <!-- Loading -->
+        <div *ngIf="isLoadingDoc" class="panel-empty">
+          <svg class="spin" width="28" height="28" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="#e0e7ff" stroke-width="4"/>
+            <path d="M4 12a8 8 0 018-8" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+          <p>Extracting annotations…</p>
+        </div>
+
+        <!-- Empty -->
+        <div *ngIf="!isLoadingDoc && !docComments.length" class="panel-empty">
+          <svg width="38" height="38" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
+          </svg>
+          <p>No annotations found in this document.</p>
+          <p class="panel-empty-sub">Comments/annotations embedded in the Word file will appear here.</p>
+        </div>
+
+        <!-- WPS-style threaded comment cards -->
+        <div *ngFor="let thread of docThreads" class="wps-thread">
+
+          <!-- ── Colored swatch bar (once per thread, shows anchored text) ── -->
+          <div class="wps-swatch" [ngClass]="'wps-sw-c' + thread.root.colorIdx">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"
+                 viewBox="0 0 24 24" style="flex-shrink:0;opacity:.75">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span class="wps-swatch-label">{{ thread.root.anchoredText || 'Highlighted text' }}</span>
+          </div>
+
+          <!-- ── Root comment (the person who made the comment) ── -->
+          <div class="wps-card"
+               [class.wps-card-active]="activeCommentId === thread.root.id"
+               (click)="scrollToComment(thread.root.id)"
+               title="Click to jump to highlighted text in document">
+            <div class="wps-card-row">
+              <span class="wps-num">{{ thread.rootIdx + 1 }}</span>
+              <div class="wps-av" [ngClass]="'wps-av-c' + thread.root.colorIdx">
+                {{ thread.root.author.charAt(0).toUpperCase() }}
+              </div>
+              <div class="wps-card-meta">
+                <span class="wps-card-author">{{ thread.root.author }}</span>
+                <span class="wps-card-date">{{ formatDate(thread.root.date) }}</span>
+              </div>
+              <span class="wps-badge wps-badge-cmt">Comment</span>
+              <svg class="wps-chevron" width="11" height="11" fill="none" stroke="currentColor"
+                   stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </div>
+            <p class="wps-card-text">{{ thread.root.text }}</p>
+          </div>
+
+          <!-- ── Replies (answers to the comment) ── -->
+          <div *ngFor="let r of thread.replies" class="wps-reply"
+               [class.wps-card-active]="activeCommentId === r.dc.id">
+            <div class="wps-reply-bar" [ngClass]="'wps-bar-c' + thread.root.colorIdx"></div>
+            <div class="wps-reply-inner">
+              <div class="wps-card-row">
+                <span class="wps-num">{{ r.idx + 1 }}</span>
+                <div class="wps-av" [ngClass]="'wps-av-c' + r.dc.colorIdx">
+                  {{ r.dc.author.charAt(0).toUpperCase() }}
+                </div>
+                <div class="wps-card-meta">
+                  <span class="wps-card-author">{{ r.dc.author }}</span>
+                  <span class="wps-card-date">{{ formatDate(r.dc.date) }}</span>
+                </div>
+                <span class="wps-badge wps-badge-reply">Reply</span>
+              </div>
+              <p class="wps-card-text" style="color:#475569">{{ r.dc.text }}</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ── Approval Log Tab ────────────────────────────────────── -->
+      <div *ngIf="activeTab === 'comments'" class="comments-shell">
+
+        <div class="comments-scroll">
+
+          <!-- Timeline header -->
+          <div class="alog-header">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Sorted by time &mdash; oldest first
+          </div>
+
+          <!-- Empty state -->
+          <div *ngIf="!sortedApprovalLog.length" class="panel-empty" style="padding:24px 0">
+            <svg width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <p>No approval history yet.</p>
+            <p class="panel-empty-sub">Entries appear here after submission or reviewer action.</p>
+          </div>
+
+          <!-- Timeline entries -->
+          <div class="alog-timeline">
+            <div *ngFor="let e of sortedApprovalLog; let last = last"
+                 class="alog-entry" [class.alog-last]="last">
+
+              <!-- Connector line + dot -->
+              <div class="alog-connector">
+                <div class="alog-dot" [ngClass]="'alog-dot-' + e.action.toLowerCase().replace(' ', '-')"></div>
+                <div *ngIf="!last" class="alog-line"></div>
+              </div>
+
+              <!-- Card -->
+              <div class="alog-card" [ngClass]="'alog-card-' + e.action.toLowerCase().replace(' ', '-')">
+                <div class="alog-card-top">
+                  <div class="comment-avatar" [style.background]="avatarColor(e.userRole)" style="width:28px;height:28px;font-size:10px">
+                    {{ initial(e.userName) }}
+                  </div>
+                  <div class="alog-meta">
+                    <span class="comment-name">{{ e.userName }}</span>
+                    <span class="comment-role" [class.role-reviewer]="e.userRole === 'reviewer'">{{ e.userRole }}</span>
+                  </div>
+                  <span class="alog-date">{{ formatDate(e.date) }}</span>
+                </div>
+                <div class="alog-action-row">
+                  <span class="alog-action-badge" [ngClass]="'alog-badge-' + e.action.toLowerCase().replace(' ', '-')">{{ e.action }}</span>
+                </div>
+                <p *ngIf="e.comment" class="comment-text" style="margin:4px 0 0">{{ e.comment }}</p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- ══ APPROVAL PANEL MODAL (reviewer only) ══════════════════════ -->
+  <div *ngIf="showApprovalPanel" class="approval-overlay" (click)="closeApprovalPanel()">
+    <div class="approval-modal" (click)="$event.stopPropagation()">
+
+      <!-- Decorative blue strip on the left -->
+      <div class="approval-side-strip">
+        <svg width="44" height="44" fill="none" stroke="rgba(255,255,255,.8)" stroke-width="1.5"
+             viewBox="0 0 24 24">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span class="approval-side-label">Review</span>
+      </div>
+
+      <!-- Form area -->
+      <div class="approval-form">
+        <div class="approval-header-row">
+          <span class="approval-title">Approval Task</span>
+          <button class="approval-close-btn" (click)="closeApprovalPanel()" title="Close">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Contract title info row -->
+        <div class="approval-contract-info">
+          <svg width="12" height="12" fill="none" stroke="#94a3b8" stroke-width="2"
+               viewBox="0 0 24 24" style="flex-shrink:0">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          <span>{{ contract?.judulKontrak }}</span>
+          <span class="approval-contract-id">{{ contract?.contractId }}</span>
+        </div>
+
+        <!-- Action chips row -->
+        <div class="approval-chips-label">Select Action</div>
+        <div class="approval-chips">
+          <button *ngFor="let act of reviewActions"
+                  class="approval-chip"
+                  [class.chip-active]="reviewAction === act"
+                  [ngClass]="'chip-' + act.toLowerCase().replace(' ', '-')"
+                  (click)="reviewAction = act">
+            <!-- icon per action -->
+            <svg *ngIf="act === 'Approved'" width="11" height="11" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <svg *ngIf="act === 'Rejected'" width="11" height="11" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            <svg *ngIf="act === 'Pending'" width="11" height="11" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <svg *ngIf="act === 'Need Revision'" width="11" height="11" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            {{ act }}
+          </button>
+        </div>
+
+        <!-- Fields row -->
+        <div class="approval-fields">
+          <!-- Log Comment -->
+          <div class="approval-field">
+            <label class="approval-field-label">Log Comment</label>
+            <textarea [(ngModel)]="reviewNote"
+                      class="approval-textarea"
+                      placeholder="Type here…"
+                      rows="3"></textarea>
+          </div>
+          <!-- Log Action (read-only display of selection) -->
+          <div class="approval-field">
+            <label class="approval-field-label">Log Action</label>
+            <div class="approval-action-display" [class.has-value]="reviewAction">
+              <span *ngIf="!reviewAction" style="color:#94a3b8">Nothing selected</span>
+              <span *ngIf="reviewAction" [style.color]="reviewActionColor(reviewAction)">
+                {{ reviewAction }}
+              </span>
+              <svg width="12" height="12" fill="none" stroke="#94a3b8" stroke-width="2"
+                   viewBox="0 0 24 24">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer buttons -->
+        <div class="approval-footer">
+          <button class="approval-btn-cancel" (click)="closeApprovalPanel()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Cancel
+          </button>
+          <button class="approval-btn-submit" (click)="submitReview()" [disabled]="!reviewAction">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,507 @@
+<!-- ── Page Wrapper ───────────────────────────────────────────── -->
+<div class="flex flex-col gap-5 p-4 lg:p-5 bg-[#F8FAFC] min-h-[calc(100vh-65px)] overflow-x-hidden w-full">
+
+  <!-- ══ Save Success Toast ════════════════════════════════════════ -->
+  <div *ngIf="saveToast"
+       class="fixed top-6 right-5 z-[999] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl bg-white border border-emerald-100"
+       style="min-width:270px; max-width:340px; animation: slideUpIn 0.3s ease;">
+    <!-- Green icon circle -->
+    <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <!-- Message -->
+    <div class="flex-1 min-w-0">
+      <p class="text-[13px] font-bold text-[#1F2937] leading-tight">Result Saved</p>
+      <p class="text-[11px] text-[#64748B] mt-0.5 leading-snug">Verification data has been saved successfully.</p>
+    </div>
+    <!-- Dismiss button -->
+    <button (click)="dismissToast()" class="shrink-0 text-[#CBD5E1] hover:text-[#94A3B8] transition-colors">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ══ Breadcrumb Nav (history / detail mode only) ══════════════ -->
+  <div *ngIf="historyMode" class="flex items-center gap-2 text-[13px]">
+    <button (click)="goBack()"
+            class="flex items-center gap-1.5 font-semibold text-[#2563EB] hover:opacity-80 transition-opacity shrink-0">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back
+    </button>
+    <span class="text-[#CBD5E1] shrink-0">/</span>
+    <span class="text-[#64748B] hidden sm:inline shrink-0">Verification History</span>
+    <span class="text-[#CBD5E1] hidden sm:inline shrink-0">/</span>
+    <span class="font-semibold text-[#1F2937] truncate min-w-0">{{ historyFileName || 'Detail' }}</span>
+  </div>
+
+  <!-- ══ Hero Banner (always shown) ════════════════════════════════ -->
+  <div class="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl p-5 sm:p-7 flex items-center justify-between relative overflow-hidden min-h-[120px] sm:min-h-[150px]">
+    <div class="z-10 flex-1">
+      <div class="text-[9px] sm:text-[10px] font-bold tracking-[0.14em] text-white/70 uppercase mb-2 sm:mb-3">AI CONTRACT VERIFICATION</div>
+      <h2 *ngIf="!historyMode" class="text-[16px] sm:text-[20px] font-bold text-white leading-snug">
+        Verify your contract document<br class="hidden sm:block" />
+        against AI-powered clause analysis.
+      </h2>
+      <h2 *ngIf="historyMode" class="text-[16px] sm:text-[20px] font-bold text-white leading-snug">
+        Saved verification result<br class="hidden sm:block" />
+        for this contract document.
+      </h2>
+    </div>
+    <img src="assets/images/Robot Analysis.png" alt="AI Contract" class="hidden sm:block shrink-0 h-[120px] sm:h-[140px] object-contain z-10 drop-shadow-lg" />
+    <div class="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-teal-300/20 blur-3xl pointer-events-none"></div>
+  </div>
+
+  <!-- ══ Main Layout ══════════════════════════════════════════════ -->
+  <div class="flex flex-col lg:flex-row gap-5 items-start">
+
+    <!-- ─── LEFT: Upload + Status ──────────────────────────────── -->
+    <div class="w-full lg:w-[360px] shrink-0 flex flex-col gap-4">
+
+      <!-- History Mode: file info card with Download button -->
+      <div *ngIf="historyMode" class="bg-white rounded-2xl p-4 shadow-sm">
+        <p class="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wide mb-3">Document</p>
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[13px] font-bold text-[#1F2937] leading-snug break-words">{{ historyFileName || 'Document' }}</p>
+            <p class="text-[11px] text-[#94A3B8] mt-1">Saved result</p>
+          </div>
+        </div>
+        <!-- Download button -->
+        <button *ngIf="historyRecordId"
+                (click)="downloadOriginal()"
+                [disabled]="isDownloading"
+                class="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F0FDF4] text-[#10B981] text-[13px] font-bold hover:bg-[#DCFCE7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#D1FAE5]">
+          <svg *ngIf="!isDownloading" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <svg *ngIf="isDownloading" class="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#10B981" stroke-width="3" opacity="0.25"/>
+            <path d="M4 12a8 8 0 018-8" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          {{ isDownloading ? 'Downloading...' : 'Download Document' }}
+        </button>
+      </div>
+
+      <!-- Upload Card (hidden in history / read-only mode) -->
+      <div *ngIf="!historyMode" class="bg-white rounded-2xl p-5 shadow-sm">
+        <h3 class="text-[15px] font-bold text-[#1F2937] mb-4">Upload Contract Document</h3>
+
+        <!-- Drop Zone -->
+        <div
+          class="border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-5 sm:p-7 cursor-pointer transition-all text-center select-none min-h-[140px]"
+          [class.border-teal-400]="isDragOver"
+          [class.bg-teal-50]="isDragOver"
+          [class.border-slate-200]="!isDragOver"
+          [class.bg-slate-50]="!isDragOver"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop($event)"
+          (click)="fileInput.click()"
+        >
+          <!-- No file selected -->
+          <ng-container *ngIf="!selectedFile">
+            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-teal-100 flex items-center justify-center mb-3">
+              <svg width="24" height="24" fill="none" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-700">Tap to select file</p>
+            <p class="text-[11px] text-slate-400 mt-1">PDF, DOC, DOCX supported</p>
+          </ng-container>
+
+          <!-- File selected -->
+          <ng-container *ngIf="selectedFile">
+            <div class="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center mb-3">
+              <svg width="28" height="28" fill="none" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="9" y1="13" x2="15" y2="13"/>
+                <line x1="9" y1="17" x2="15" y2="17"/>
+              </svg>
+            </div>
+            <p class="text-sm font-semibold text-slate-700 break-all px-2">{{ selectedFile.name }}</p>
+            <p class="text-xs text-slate-400 mt-1">{{ formatSize(selectedFile.size) }}</p>
+          </ng-container>
+        </div>
+
+        <input #fileInput type="file" class="hidden" accept=".pdf,.doc,.docx" (change)="onFileSelect($event)" />
+
+        <!-- Error message -->
+        <p *ngIf="errorMessage" class="text-xs text-red-500 mt-2 flex items-center gap-1">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          {{ errorMessage }}
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2 mt-4">
+          <button
+            *ngIf="selectedFile"
+            (click)="clearFile()"
+            class="py-3 sm:py-2.5 px-5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shrink-0">
+            Clear
+          </button>
+          <button
+            (click)="verifyContract()"
+            [disabled]="!selectedFile || isLoading"
+            class="flex-1 py-3 sm:py-2.5 rounded-xl bg-teal-600 text-white text-sm font-bold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <!-- Spinner -->
+            <ng-container *ngIf="isLoading">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Verifying...
+            </ng-container>
+            <!-- Default -->
+            <ng-container *ngIf="!isLoading">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <polyline points="9 12 11 14 15 10"/>
+              </svg>
+              Verify Contract
+            </ng-container>
+          </button>
+        </div>
+      </div>
+
+      <!-- Result Status Card -->
+      <div *ngIf="result" class="bg-white rounded-2xl p-5 shadow-sm">
+        <h3 class="text-[14px] font-bold text-[#1F2937] mb-4">Verification Result</h3>
+
+        <!-- Gauge centered -->
+        <div class="flex justify-center mb-4">
+          <svg class="w-[140px] h-[140px]" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="#F1F5F9" stroke-width="10"/>
+            <circle
+              cx="60" cy="60" r="50"
+              fill="none"
+              [attr.stroke]="statusColor"
+              stroke-width="10"
+              stroke-linecap="round"
+              [attr.stroke-dasharray]="getCircleDash(percentage)"
+              stroke-dashoffset="0"
+              transform="rotate(-90 60 60)"
+              style="transition: stroke-dasharray 0.8s ease"
+            />
+            <text x="60" y="53" text-anchor="middle" dominant-baseline="middle"
+                  [attr.fill]="statusColor" font-size="22" font-weight="800" font-family="Manrope,Inter,sans-serif">
+              {{ percentage }}%
+            </text>
+            <text x="60" y="72" text-anchor="middle" dominant-baseline="middle"
+                  fill="#94A3B8" font-size="9" font-family="Manrope,Inter,sans-serif">
+              Match
+            </text>
+          </svg>
+        </div>
+
+        <!-- Status badge centered -->
+        <div class="flex justify-center mb-4">
+          <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-bold text-white"
+                [style.background]="statusColor">
+            <!-- Safe: checkmark -->
+            <svg *ngIf="percentage > 75" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <!-- Warning: triangle -->
+            <svg *ngIf="percentage > 59 && percentage <= 75" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <!-- Critical: X -->
+            <svg *ngIf="percentage <= 59" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            {{ riskLevel }}
+          </span>
+        </div>
+
+        <!-- Stats row -->
+        <div class="flex border-t border-slate-100 pt-4">
+          <div class="flex-1 text-center">
+            <p class="text-[11px] text-slate-400 font-medium mb-1">Total</p>
+            <p class="text-[26px] font-extrabold text-slate-800 leading-none">{{ result.model.detail.length }}</p>
+          </div>
+          <div class="flex-1 text-center border-x border-slate-100">
+            <p class="text-[11px] text-slate-400 font-medium mb-1">Found</p>
+            <p class="text-[26px] font-extrabold text-teal-600 leading-none">{{ countFound() }}</p>
+          </div>
+          <div class="flex-1 text-center">
+            <p class="text-[11px] text-slate-400 font-medium mb-1">Missing</p>
+            <p class="text-[26px] font-extrabold text-red-500 leading-none">{{ countMissing() }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- ─── RIGHT: Results ──────────────────────────────────────── -->
+    <div class="w-full lg:flex-1 min-w-0 flex flex-col gap-4">
+
+    <!-- History loading state -->
+    <div *ngIf="historyLoading && historyMode"
+         class="w-full bg-white rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col items-center justify-center gap-5 min-h-[260px] sm:min-h-[340px]">
+      <div class="relative w-20 h-20 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-blue-100 border-t-[#2563EB] animate-spin"></div>
+        <svg width="30" height="30" fill="none" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <div class="w-full max-w-xs flex flex-col gap-3">
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-3/4 mx-auto"></div>
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-full"></div>
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-5/6 mx-auto"></div>
+      </div>
+      <p class="text-sm text-slate-400 font-medium">Loading saved result…</p>
+    </div>
+
+    <!-- Loading skeleton (while verifying) -->
+    <div *ngIf="isLoading" class="w-full bg-white rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col items-center justify-center gap-5 min-h-[260px] sm:min-h-[340px]">
+      <!-- Spinning shield icon -->
+      <div class="relative w-20 h-20 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full border-4 border-teal-100 border-t-teal-500 animate-spin"></div>
+        <svg width="32" height="32" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+      <!-- Pulsing skeleton bars -->
+      <div class="w-full max-w-xs flex flex-col gap-3">
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-3/4 mx-auto"></div>
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-full"></div>
+        <div class="h-3 bg-slate-100 rounded-full animate-pulse w-5/6 mx-auto"></div>
+      </div>
+      <p class="text-sm text-slate-400 font-medium">AI is analyzing your contract...</p>
+    </div>
+
+    <!-- Error state panel -->
+    <div *ngIf="apiError && !isLoading" class="w-full bg-white rounded-2xl shadow-sm flex flex-col items-center justify-center text-center gap-4 p-6 sm:p-8 min-h-[300px] sm:min-h-[360px] error-panel-enter">
+
+      <!-- Sonar pulse rings + error icon -->
+      <div class="relative flex items-center justify-center w-28 h-28 sm:w-40 sm:h-40">
+        <div class="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-red-300 pulse-ring" style="animation-delay:0s"></div>
+        <div class="absolute w-22 h-22 sm:w-28 sm:h-28 rounded-full border-2 border-red-200 pulse-ring" style="animation-delay:0.5s"></div>
+        <div class="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full border-2 border-red-100 pulse-ring" style="animation-delay:1s"></div>
+        <!-- Icon -->
+        <div class="relative z-10 w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+          <svg width="28" height="28" fill="none" stroke="#EF4444" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Error code badge + message -->
+      <div>
+        <span class="inline-block px-3 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold mb-2">{{ apiError.code }}</span>
+        <p class="text-sm font-semibold text-slate-700 max-w-xs">{{ apiError.message }}</p>
+      </div>
+
+      <!-- Countdown ring -->
+      <div *ngIf="retryCountdown > 0" class="flex flex-col items-center gap-2">
+        <div class="relative flex items-center justify-center">
+          <svg width="88" height="88" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#FEE2E2" stroke-width="6"/>
+            <circle cx="40" cy="40" r="32"
+                    fill="none" stroke="#EF4444" stroke-width="6"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="201.06"
+                    [attr.stroke-dashoffset]="getCountdownOffset()"
+                    transform="rotate(-90 40 40)"
+                    style="transition: stroke-dashoffset 1s linear"/>
+          </svg>
+          <div class="absolute flex flex-col items-center">
+            <span class="text-[20px] font-extrabold text-red-600 leading-none">{{ retryCountdown }}</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">sec</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400">Auto-retrying in {{ retryCountdown }}s&hellip;</p>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full max-w-[300px]">
+        <button
+          (click)="retryNow()"
+          class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 active:scale-95 transition-all">
+          <svg class="w-4 h-4 spin-on-hover" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 .49-3.4"/>
+          </svg>
+          Retry Now
+        </button>
+        <button
+          (click)="clearFile()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 active:scale-95 transition-all">
+          Change File
+        </button>
+      </div>
+
+      <!-- Cancel auto-retry link -->
+      <button *ngIf="retryCountdown > 0" (click)="cancelRetry()"
+              class="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors">
+        Cancel auto-retry
+      </button>
+    </div>
+
+    <!-- Empty / idle state (before any submit) — hidden on mobile, visible on lg+ -->
+    <div *ngIf="!result && !apiError && !isLoading" class="hidden lg:flex w-full bg-white rounded-2xl shadow-sm flex-col items-center justify-center text-center gap-5 p-10 min-h-[240px]">
+      <div class="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center">
+        <svg width="32" height="32" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-semibold text-slate-600">Upload a contract document to begin</p>
+        <p class="text-xs text-slate-400 mt-1">AI will analyze all clauses and check validity</p>
+      </div>
+    </div>
+
+    <!-- Results panel -->
+    <div *ngIf="result" class="w-full flex flex-col gap-4">
+
+      <!-- Ringkasan -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm">
+        <h3 class="text-[15px] font-bold text-[#1F2937] mb-3 flex items-center gap-2">
+          <svg width="16" height="16" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Summary
+        </h3>
+        <p class="text-sm text-slate-600 leading-relaxed">{{ result.model.ringkasan }}</p>
+      </div>
+
+      <!-- Clause Detail: 2-column layout -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm">
+
+        <!-- Header row -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-5">
+          <h3 class="text-[14px] sm:text-[15px] font-bold text-[#1F2937] flex items-center gap-2">
+            <svg width="15" height="15" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+              <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            Clause Detail Analysis
+          </h3>
+          <!-- Summary chips -->
+          <div class="flex items-center gap-2 text-xs font-semibold flex-wrap">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-teal-700">
+              <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+              {{ validClauses.length }} Valid
+            </span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span>
+              {{ invalidClauses.length }} Not Found
+            </span>
+          </div>
+        </div>
+
+        <!-- 2-Column grid: 1 col mobile, 2 col md+ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- ── Column 1: Valid / Found ── -->
+          <div class="flex flex-col gap-3">
+            <!-- Column header -->
+            <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-teal-50 border border-teal-100">
+              <div class="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
+                <svg width="12" height="12" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+              <p class="text-[12px] font-bold text-teal-700">Valid Clauses</p>
+              <span class="ml-auto text-[11px] font-bold text-teal-600 bg-teal-100 px-2 py-0.5 rounded-full">{{ validClauses.length }}</span>
+            </div>
+
+            <!-- Valid clause cards -->
+            <div
+              *ngFor="let item of validClauses; let i = index"
+              class="rounded-xl border border-teal-100 bg-teal-50/40 p-3.5 flex flex-col gap-2"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <!-- Number + topic -->
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <span class="shrink-0 w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center text-[9px] font-bold text-white">{{ i + 1 }}</span>
+                  <p class="text-[12px] font-bold text-slate-800 leading-snug break-words">{{ item.Topik }}</p>
+                </div>
+                <!-- Pasal badge -->
+                <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-teal-100 text-teal-700 whitespace-nowrap max-w-[90px] truncate">{{ item.Posisi }}</span>
+              </div>
+              <!-- Deskripsi -->
+              <p class="text-[11px] text-slate-500 leading-relaxed ml-7">{{ item.deskripsi }}</p>
+            </div>
+
+            <!-- Empty state col 1 -->
+            <div *ngIf="validClauses.length === 0" class="rounded-xl border border-teal-100 p-5 text-center text-slate-400 text-xs">
+              No valid clauses found.
+            </div>
+          </div>
+
+          <!-- ── Column 2: Not Found / Missing ── -->
+          <div class="flex flex-col gap-3">
+            <!-- Column header -->
+            <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-100">
+              <div class="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+                <svg width="12" height="12" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" viewBox="0 0 24 24">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </div>
+              <p class="text-[12px] font-bold text-red-600">Not Found / Missing</p>
+              <span class="ml-auto text-[11px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">{{ invalidClauses.length }}</span>
+            </div>
+
+            <!-- Invalid clause cards -->
+            <div
+              *ngFor="let item of invalidClauses; let i = index"
+              class="rounded-xl border border-red-100 bg-red-50/50 p-3.5 flex flex-col gap-2"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <!-- Number + topic -->
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                  <span class="shrink-0 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white">{{ i + 1 }}</span>
+                  <p class="text-[12px] font-bold text-slate-800 leading-snug break-words">{{ item.Topik }}</p>
+                </div>
+                <!-- Tidak Ditemukan badge -->
+                <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-red-100 text-red-600 whitespace-nowrap max-w-[90px] truncate">{{ item.Posisi }}</span>
+              </div>
+              <!-- Deskripsi -->
+              <p class="text-[11px] text-slate-500 leading-relaxed ml-7">{{ item.deskripsi }}</p>
+            </div>
+
+            <!-- Empty state col 2 -->
+            <div *ngIf="invalidClauses.length === 0" class="rounded-xl border border-red-100 p-5 text-center text-slate-400 text-xs">
+              All clauses are present. 🎉
+            </div>
+          </div>
+
+        </div><!-- /grid -->
+      </div><!-- /clause detail -->
+
+    </div><!-- /results -->
+
+    </div><!-- /right wrapper -->
+
+  </div><!-- /main layout -->
+</div>

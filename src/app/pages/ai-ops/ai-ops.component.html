@@ -1,0 +1,238 @@
+<div class="bg-[#F8FAFC] min-h-screen">
+<div class="flex flex-col md:flex-row gap-0 min-h-screen">
+
+  <!-- ══════════════ LEFT PANEL ══════════════ -->
+  <div class="w-full md:w-[220px] shrink-0 bg-gradient-to-br from-violet-700 via-indigo-700 to-blue-700 flex flex-row md:flex-col p-4 md:p-6 relative overflow-hidden items-center md:items-start gap-4 md:gap-0">
+    <!-- Decorative blobs -->
+    <div class="absolute top-[-30px] left-[-30px] w-40 h-40 rounded-full bg-violet-500/40 blur-2xl pointer-events-none"></div>
+    <div class="absolute bottom-[100px] right-[-20px] w-32 h-32 rounded-full bg-blue-400/30 blur-2xl pointer-events-none"></div>
+
+    <div class="z-10">
+      <h2 class="text-white text-[18px] md:text-[22px] font-extrabold leading-tight">AI Ops</h2>
+      <p class="text-white/60 text-[9px] font-bold tracking-[0.12em] uppercase mt-1 z-10">System Health &amp;<br class="hidden md:block">Resource Monitoring</p>
+    </div>
+
+    <!-- Clock -->
+    <div class="md:mt-6 text-white text-[16px] md:text-[20px] font-bold tracking-wide z-10">{{ currentTime }}</div>
+
+    <!-- Robot illustration (hidden on mobile) -->
+    <div class="mt-auto hidden md:flex justify-center z-10">
+      <svg width="160" height="170" viewBox="0 0 160 170" fill="none">
+        <!-- Glow base -->
+        <ellipse cx="80" cy="158" rx="50" ry="8" fill="rgba(255,255,255,0.1)"/>
+        <!-- Body -->
+        <rect x="38" y="82" width="84" height="62" rx="14" fill="white" opacity="0.92"/>
+        <!-- Head -->
+        <rect x="50" y="46" width="60" height="42" rx="12" fill="white" opacity="0.96"/>
+        <!-- Eyes -->
+        <circle cx="68" cy="65" r="7" fill="#2563EB"/>
+        <circle cx="92" cy="65" r="7" fill="#2563EB"/>
+        <circle cx="70" cy="63" r="3" fill="white"/>
+        <circle cx="94" cy="63" r="3" fill="white"/>
+        <!-- Antenna -->
+        <line x1="80" y1="46" x2="80" y2="30" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="80" cy="26" r="5" fill="#EC861D"/>
+        <!-- Neck -->
+        <rect x="72" y="86" width="16" height="6" rx="3" fill="#E2E8F0"/>
+        <!-- Left arm -->
+        <rect x="10" y="90" width="30" height="14" rx="7" fill="white" opacity="0.8"/>
+        <!-- Right arm (holding laptop) -->
+        <rect x="120" y="90" width="30" height="14" rx="7" fill="white" opacity="0.8"/>
+        <!-- Chest panel -->
+        <rect x="56" y="98" width="48" height="30" rx="8" fill="#2563EB" opacity="0.55"/>
+        <circle cx="68" cy="113" r="4" fill="#EC861D"/>
+        <circle cx="80" cy="113" r="4" fill="#10B981"/>
+        <circle cx="92" cy="113" r="4" fill="#EF4444"/>
+        <!-- Legs -->
+        <rect x="56" y="142" width="20" height="18" rx="7" fill="white" opacity="0.8"/>
+        <rect x="84" y="142" width="20" height="18" rx="7" fill="white" opacity="0.8"/>
+        <!-- Laptop (right side) -->
+        <rect x="118" y="70" width="34" height="24" rx="4" fill="white" opacity="0.85"/>
+        <rect x="121" y="73" width="28" height="17" rx="2" fill="#1E3A8A" opacity="0.7"/>
+        <line x1="124" y1="77" x2="145" y2="77" stroke="#60A5FA" stroke-width="1.5"/>
+        <line x1="124" y1="81" x2="140" y2="81" stroke="#93C5FD" stroke-width="1"/>
+        <line x1="124" y1="85" x2="143" y2="85" stroke="#93C5FD" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════ RIGHT CONTENT ══════════════ -->
+  <div class="flex-1 flex flex-col gap-5 p-4 md:p-6 bg-[#F8FAFC] overflow-y-auto">
+
+    <!-- ─── Network Monitoring ─── -->
+    <div>
+      <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-[0.1em] mb-2">Network Monitoring</p>
+      <div class="bg-[#1F2937] rounded-xl px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[11px] text-gray-400 font-semibold mb-0.5">ICMP Status</p>
+            <p class="text-white text-[17px] font-bold">{{ icmpStatus }}</p>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <p class="text-[11px] text-gray-400 mb-0.5">Average Latency</p>
+          <p class="text-white text-[22px] font-extrabold leading-none">{{ avgLatency }}</p>
+          <p class="text-green-400 text-[12px] font-semibold mt-1">
+            <span>↗</span> {{ latencyDelta }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Host Health ─── -->
+    <div>
+      <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-[0.1em] mb-2">Host Health</p>
+      <div class="flex flex-wrap items-stretch gap-3">
+
+        <!-- Summary -->
+        <div class="flex-1 bg-white rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm border border-slate-100">
+          <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-[17px] font-extrabold text-[#1F2937]">{{ unhealthyHosts }} of {{ totalHosts }} Hosts Unhealthy</p>
+            <p class="text-[11px] text-[#64748B]">immediate attention required</p>
+          </div>
+        </div>
+
+        <!-- Total Hosts -->
+        <div class="flex-1 min-w-[140px] bg-blue-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
+          <div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+            <p class="text-[11px] font-semibold mt-2 text-white/80">Total Hosts</p>
+          </div>
+          <p class="text-[36px] font-extrabold leading-none">{{ totalHosts }}</p>
+        </div>
+
+        <!-- Healthy -->
+        <div class="flex-1 min-w-[140px] bg-green-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
+          <div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
+            <p class="text-[11px] font-semibold mt-2 text-white/80">Healthy</p>
+          </div>
+          <p class="text-[36px] font-extrabold leading-none">{{ healthyHosts }}</p>
+        </div>
+
+        <!-- Unhealthy -->
+        <div class="flex-1 min-w-[140px] bg-red-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
+          <div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <p class="text-[11px] font-semibold mt-2 text-white/80">Unhealthy</p>
+          </div>
+          <p class="text-[36px] font-extrabold leading-none">{{ unhealthyHosts }}</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── Server Cards ─── -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        *ngFor="let s of servers"
+        class="bg-white rounded-xl border-2 shadow-sm flex flex-col gap-3 p-4"
+        [ngClass]="statusBorderClass(s)"
+      >
+
+        <!-- Card header -->
+        <div class="flex items-center justify-between">
+          <p class="text-[13px] font-bold text-[#1F2937]">{{ s.name }}</p>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="statusBadgeClass(s)">
+            {{ s.status }}
+          </span>
+        </div>
+
+        <!-- Usage bars -->
+        <div class="flex flex-col gap-2">
+          <ng-container *ngFor="let metric of getMetrics(s)">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span class="text-[#64748B]">{{ metric.label }}</span>
+                <span class="font-semibold text-[#1F2937]">{{ metric.value }}%</span>
+              </div>
+              <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" [ngClass]="barColor(metric.value)" [style.width.%]="metric.value"></div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- AI Recommendation button -->
+        <button
+          *ngIf="hasAiRecommendation(s)"
+          class="w-full flex items-center justify-center gap-1.5 border rounded-full py-1.5 text-[11px] font-semibold transition-colors"
+          [ngClass]="aiRecommendationClass(s)"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/>
+          </svg>
+          AI Recommendation
+        </button>
+
+        <!-- Top Resource CPU -->
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource CPU</p>
+          <div *ngFor="let p of s.topCpu" class="mb-1.5 last:mb-0">
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-[#64748B]">{{ p.name }}</span>
+              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
+            </div>
+            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Resource RAM -->
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource RAM</p>
+          <div *ngFor="let p of s.topRam" class="mb-1.5 last:mb-0">
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-[#64748B]">{{ p.name }}</span>
+              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
+            </div>
+            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Resource Storage -->
+        <div class="bg-slate-50 rounded-lg p-3">
+          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource Storage</p>
+          <div *ngFor="let p of s.topStorage" class="mb-1.5 last:mb-0">
+            <div class="flex justify-between text-[10px] mb-0.5">
+              <span class="text-[#64748B]">{{ p.name }}</span>
+              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
+            </div>
+            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>

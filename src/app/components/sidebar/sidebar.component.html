@@ -1,0 +1,82 @@
+<nav class="sidebar-nav w-[220px] min-h-screen bg-white flex flex-col fixed top-0 left-0 bottom-0 z-[100] overflow-y-auto border-r border-slate-100 shadow-sm"
+     [class.is-open]="layoutService.sidebarOpen()">
+
+  <!-- Mobile close button -->
+  <button
+    class="md:hidden absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors z-10"
+    (click)="layoutService.close()" aria-label="Close menu">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/>
+    </svg>
+  </button>
+
+  <!-- Logo -->
+  <div class="flex flex-col items-center gap-1 px-4 pt-5 pb-4 border-slate-100">
+    <a routerLink="/dashboard" class="cursor-pointer">
+      <img src="assets/images/Logo AI Dashboard.png" alt="AI Dashboard Logo" class="w-28 h-28 object-contain hover:opacity-80 transition-opacity" />
+    </a>
+  </div>
+
+  <!-- Main nav -->
+  <div class="py-4 flex-1">
+    <p class="text-[14px] font-semibold tracking-[0.1em] text-slate-800 uppercase px-[18px] pb-2">AI MENU</p>
+    <ul>
+      <li *ngFor="let item of mainNav">
+        <a class="flex items-center gap-3 px-[18px] py-2.5 text-slate-600 text-[13px] font-medium cursor-pointer relative transition-all hover:bg-slate-50 hover:text-slate-900"
+           [routerLink]="item.route" routerLinkActive="sidebar-link-active">
+          <img [src]="item.iconImg" class="sidebar-icon-img w-5 h-5 object-contain shrink-0" [alt]="item.label" />
+          <span class="leading-[1.3]">{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Settings pushed to bottom -->
+  <div class="mt-auto pt-3 pb-4">
+    <!-- Logged-in user info -->
+    <div *ngIf="authService.currentUser()" class="mx-3 mb-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+             [class.bg-violet-100]="authService.userRole() === 'user'"
+             [class.bg-blue-100]="authService.userRole() === 'reviewer'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"
+               [class.text-violet-600]="authService.userRole() === 'user'"
+               [class.text-blue-600]="authService.userRole() === 'reviewer'">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[12px] font-semibold text-slate-800 truncate">{{ authService.currentUser()?.name }}</p>
+          <span class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-0.5"
+                [class.bg-violet-100]="authService.userRole() === 'user'"
+                [class.text-violet-700]="authService.userRole() === 'user'"
+                [class.bg-blue-100]="authService.userRole() === 'reviewer'"
+                [class.text-blue-700]="authService.userRole() === 'reviewer'">
+            {{ authService.userRole() }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-[14px] font-semibold tracking-[0.1em] text-slate-800 uppercase px-[18px] pb-2">SETTINGS</p>
+    <ul>
+      <li *ngFor="let item of settingsNav">
+        <ng-container *ngIf="item.icon !== 'logout'; else logoutItem">
+          <a class="flex items-center gap-3 px-[18px] py-2.5 text-slate-600 text-[13px] font-medium cursor-pointer relative transition-all hover:bg-slate-50 hover:text-slate-900"
+             [routerLink]="item.route" routerLinkActive="sidebar-link-active">
+            <img [src]="item.iconImg" class="sidebar-icon-img w-5 h-5 object-contain shrink-0" [alt]="item.label" />
+            <span class="leading-[1.3]">{{ item.label }}</span>
+          </a>
+        </ng-container>
+        <ng-template #logoutItem>
+          <button (click)="logout()"
+                  class="logout-link w-full flex items-center gap-3 px-[18px] py-2.5 text-slate-600 text-[13px] font-medium cursor-pointer relative transition-all hover:bg-red-50 hover:text-red-600">
+            <img [src]="item.iconImg" class="sidebar-icon-img w-5 h-5 object-contain shrink-0" [alt]="item.label" />
+            <span class="leading-[1.3]">{{ item.label }}</span>
+          </button>
+        </ng-template>
+      </li>
+    </ul>
+  </div>
+
+</nav>

@@ -1,0 +1,16 @@
+/* canvas sizing helpers – Tailwind can't set canvas intrinsic dimensions */
+.donut-canvas canvas { width: 100% !important; height: 100% !important; }
+
+/* Responsive container adjustments */
+@media (min-width: 1920px) {
+  /* At 1920x1200, adjust grid for better spacing */
+  .grid.grid-cols-1 {
+    gap: 1.5rem;
+  }
+}
+
+/* Prevent excessive bottom padding */
+:host {
+  display: block;
+}
+

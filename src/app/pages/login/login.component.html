@@ -1,0 +1,113 @@
+<!-- Full-screen login page -->
+<div class="login-bg min-h-screen flex items-center justify-center p-4">
+
+  <!-- Decorative blobs -->
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="login-card w-full max-w-md relative z-10">
+
+    <!-- Logo -->
+    <div class="flex flex-col items-center mb-8">
+      <img src="assets/images/Logo AI Dashboard.png" alt="AI Dashboard" class="w-24 h-24 object-contain drop-shadow-lg" />
+      <h1 class="text-2xl font-bold text-[#1F2937] mt-2 tracking-tight">AI Dashboard</h1>
+      <p class="text-sm text-slate-500 mt-1">Sign in to your account</p>
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate autocomplete="off">
+
+      <!-- Username -->
+      <div class="field-group mb-4">
+        <label class="field-label" for="username">Username</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <input
+            id="username"
+            type="text"
+            [(ngModel)]="username"
+            name="username"
+            class="field-input"
+            placeholder="Enter your username"
+            autocomplete="username"
+          />
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="field-group mb-6">
+        <label class="field-label" for="password">Password</label>
+        <div class="input-wrap">
+          <span class="input-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            [(ngModel)]="password"
+            name="password"
+            class="field-input pr-11"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="eye-btn" (click)="togglePassword()" tabindex="-1" aria-label="Toggle password visibility">
+            <svg *ngIf="!showPassword()" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword()" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div *ngIf="errorMsg()" class="error-banner mb-4">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24" class="shrink-0">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>{{ errorMsg() }}</span>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="login-btn" [disabled]="loading()">
+        <span *ngIf="!loading()">Sign In</span>
+        <span *ngIf="loading()" class="flex items-center justify-center gap-2">
+          <svg class="spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          Signing in...
+        </span>
+      </button>
+    </form>
+
+    <!-- Dummy credentials hint -->
+    <div class="hint-box mt-6">
+      <p class="hint-title">Demo Accounts</p>
+      <div class="grid grid-cols-2 gap-3 mt-2">
+        <div *ngFor="let h of hints" class="hint-card" (click)="username = h.username; password = h.password">
+          <span class="hint-role" [class.role-user]="h.role === 'User'" [class.role-reviewer]="h.role === 'Reviewer'">
+            {{ h.role }}
+          </span>
+          <p class="hint-cred"><span>User:</span> {{ h.username }}</p>
+          <p class="hint-cred"><span>Pass:</span> {{ h.password }}</p>
+          <p class="hint-tap">Click to autofill</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

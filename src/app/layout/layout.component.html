@@ -1,0 +1,47 @@
+<div class="flex min-h-screen bg-[#F8FAFC]">
+  <app-sidebar></app-sidebar>
+
+  <!-- Mobile overlay backdrop -->
+  <div
+    *ngIf="layoutService.sidebarOpen()"
+    class="fixed inset-0 bg-black/40 z-[90] md:hidden"
+    (click)="layoutService.close()">
+  </div>
+
+  <div class="md:ml-[220px] flex-1 flex flex-col transition-all duration-300">
+
+    <!-- Mobile top bar (hidden on md+) -->
+    <div class="md:hidden flex items-center gap-2 px-4 py-3 bg-white border-b border-slate-100 shadow-sm sticky top-0 z-[80]">
+      <!-- Hamburger -->
+      <button
+        class="flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
+        (click)="layoutService.toggle()" aria-label="Toggle menu">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="17" y2="6"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="14" x2="17" y2="14"/>
+        </svg>
+      </button>
+
+      <!-- Spacer -->
+      <div class="flex-1"></div>
+
+      <!-- Settings button -->
+      <a routerLink="/settings" routerLinkActive="mobile-nav-active"
+         class="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-slate-100 transition-colors shrink-0"
+         aria-label="Settings">
+        <img src="assets/Icon/vuesax/linear/setting-2.png" class="mobile-topbar-icon w-5 h-5 object-contain" alt="Settings" />
+      </a>
+
+      <!-- Logout button -->
+      <a routerLink="/logout" routerLinkActive="mobile-nav-active"
+         class="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-red-50 transition-colors shrink-0"
+         aria-label="Logout">
+        <img src="assets/Icon/vuesax/linear/logout.png" class="logout-topbar-icon w-5 h-5 object-contain" alt="Logout" />
+      </a>
+    </div>
+
+    <router-outlet></router-outlet>
+    
+  </div>
+</div>

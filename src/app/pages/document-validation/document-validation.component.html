@@ -1,0 +1,156 @@
+<!-- ── Search Bar (validation only) ─────────────────────────────── -->
+<app-search-bar></app-search-bar>
+
+<!-- ── Main Content ─────────────────────────────────────────────── -->
+<div class="flex flex-col lg:flex-row gap-8 p-6 lg:p-5 bg-[#F8FAFC]">
+  <!-- ══════════ LEFT COLUMN ══════════ -->
+  <div class="flex-1 flex flex-col gap-4 min-w-0">
+    <!-- Hero Banner -->
+    <div
+      class="bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 rounded-2xl p-5 sm:p-7 flex items-center justify-between relative overflow-hidden min-h-[120px] sm:min-h-[160px]">
+      <div class="z-10 flex-1">
+        <div class="text-[9px] sm:text-[10px] font-bold tracking-[0.14em] text-white/70 uppercase mb-2 sm:mb-3">
+          AI DOCUMENT MATCHING OVERVIEW
+        </div>
+        <h2 class="text-[16px] sm:text-[20px] font-bold text-white leading-[1.5] max-w-[500px]">
+          Overview of document matching accuracy<br class="hidden sm:block" />
+          based on automated AI analysis.
+        </h2>
+      </div>
+      <!-- Hero image: hidden on very small screens -->
+      <img src="assets/images/Robot Analysis.png" alt="Robot Analysis"
+        class="hidden sm:block shrink-0 h-[120px] sm:h-[140px] object-contain z-10 drop-shadow-lg" />
+      <!-- decorative glow -->
+      <div class="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-indigo-400/20 blur-3xl pointer-events-none"></div>
+    </div>
+
+    <!-- Result Cards -->
+    <div class="grid grid-cols-3 sm:grid-cols-6 mt-3 gap-2 sm:gap-3">
+      <div
+        class="result-card-wrap result-card rounded-2xl flex flex-col pt-3.5 px-3 pb-4 gap-2 cursor-pointer transition-all duration-200"
+        style="
+          box-shadow:
+            0 6px 18px -2px rgba(0, 0, 0, 0.13),
+            0 2px 6px -1px rgba(0, 0, 0, 0.07);
+        " *ngFor="let card of resultCards; let i = index" [style.background]="card.bg"
+        (click)="goToDetail(card.label)">
+        <p class="text-[11px] sm:text-[15px] font-bold text-center whitespace-nowrap" [style.color]="card.color">
+          {{ card.label }}
+        </p>
+
+        <img [src]="card.image" [alt]="card.label"
+          class="result-card-img w-[38px] h-[38px] sm:w-[72px] sm:h-[72px] object-contain mx-auto" />
+
+        <div class="flex items-center justify-between mt-5 w-full">
+          <span class="inline-block w-[3px] h-[22px] sm:h-[30px] rounded-full" [style.background]="card.color"></span>
+          <span class="result-card-value text-[20px] sm:text-[30px] font-extrabold leading-none"
+            [style.color]="card.color">
+            {{ card.value | number: "2.0-0" }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Chart -->
+    <div class="bg-white rounded-2xl p-5 mt-3 shadow-sm">
+      <div class="flex items-start justify-between mb-4 gap-3">
+        <div>
+          <h3 class="text-sm font-bold text-[#1F2937]">
+            AI Transaction Processing Analytic
+            <span class="block sm:inline"></span> (7 Days)
+          </h3>
+          <p class="text-[11px] text-[#64748B] mt-0.5">
+            Automated data processing powered by artificial intelligence
+          </p>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="text-[11px] text-[#64748B] block mb-1">{{ todayLabel }} (Today)</span>
+          <div class="flex items-center gap-2 justify-end">
+            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #ec861d"></span>
+            <span class="text-[11px] text-[#64748B]">last 7 days</span>
+            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background: #2563eb"></span>
+            <span class="text-[11px] text-[#64748B]">this week</span>
+          </div>
+        </div>
+      </div>
+      <div class="h-[220px] relative">
+        <canvas #analyticsChart></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- /left -->
+
+  <!-- ══════════ RIGHT COLUMN ══════════ -->
+  <div class="w-full lg:w-[500px] shrink-0 flex flex-col gap-6">
+    <!-- Stat Cards -->
+    <div>
+      <h3 class="text-[15px] font-bold text-[#1F2937] mb-3">
+        Document check processed by AI
+      </h3>
+      <div class="grid grid-cols-2 gap-3 sm:gap-5">
+        <div
+          class="group relative z-0 rounded-2xl overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.15)] min-h-[120px] transition-all duration-300 ease-out origin-top-left hover:scale-105 hover:z-10 hover:shadow-[0_15px_30px_rgba(0,0,0,0.3)]"
+          *ngFor="let s of statCards" [style.background]="s.bg">
+          <div class="flex items-center justify-between gap-2 px-3 sm:px-4 py-3 sm:py-4 h-full">
+            <div class="flex-1 min-w-0 flex flex-col items-start">
+              <p class="text-[14px] sm:text-xs font-bold text-white/90 leading-tight">
+                {{ s.title }}
+              </p>
+              <p class="text-[10px] sm:text-[10px] text-white/60 mt-0.5">
+                {{ s.subtitle }}
+              </p>
+
+              <p
+                class="text-[22px] sm:text-[30px] font-extrabold text-white mt-2 leading-none inline-block transition-transform duration-300 group-hover:scale-110 origin-left">
+                {{ s.value }}
+              </p>
+            </div>
+
+            <img [src]="s.image" [alt]="s.title"
+              class="shrink-0 w-14 h-12 sm:w-16 sm:h-16 object-contain transition-transform duration-300 group-hover:scale-125 origin-right" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technician Cards -->
+    <div class="flex-1">
+      <h3 class="text-[15px] font-bold text-[#1F2937] mt-4 mb-4">
+        Mosted Missing Technician Documentation Overview (Last Month)
+      </h3>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+        <div
+          class="bg-[#EBEBEB] border border-gray-100 rounded-xl flex flex-col overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+          *ngFor="let t of technicianCards">
+          <!-- Avatar circle -->
+          <div class="flex flex-col items-center mt-2 pt-4 pb-3 px-2">
+            <div class="w-[62px] h-[62px] mb-2.5 rounded-full overflow-hidden shrink-0 flex items-center justify-center"
+              [style.background]="t.image ? '#F8FAFC' : t.avatarBg">
+              <img *ngIf="t.image" [src]="t.image" [alt]="t.name" class="w-full h-full object-contain" />
+              <span *ngIf="!t.image" class="text-[22px] font-extrabold leading-none" [style.color]="t.badgeColor">
+                {{ t.initials }}
+              </span>
+            </div>
+            <p class="text-[11px] mt-2 mb-2 font-semibold text-[#1F2937] text-center leading-snug">
+              {{ t.name }}
+            </p>
+          </div>
+
+          <!-- Count badge -->
+          <div class="w-full py-2 text-center text-white text-[14px] font-bold mt-auto"
+            [style.background]="t.badgeColor">
+            {{ t.count | number }}
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="technicianCards.length === 0"
+          class="col-span-3 sm:col-span-5 py-10 text-center text-[#94A3B8] text-[13px]">
+          Loading...
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- /right -->
+</div>

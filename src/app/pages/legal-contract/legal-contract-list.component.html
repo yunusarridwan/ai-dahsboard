@@ -1,0 +1,210 @@
+<div class="p-4 md:p-6 bg-[#F8FAFC] min-h-screen">
+
+  <!-- ── Header ──────────────────────────────────────────────── -->
+  <div class="flex flex-col sm:flex-row sm:items-start gap-3 mb-5">
+    <div class="flex-1 min-w-0">
+      <h1 class="text-[18px] font-extrabold text-[#1F2937] leading-tight">Legal Contract Data Collection</h1>
+      <p class="text-[12px] text-[#64748B] mt-1 leading-snug max-w-xl">
+        A structured collection of key information extracted from legal contract documents,
+        used to support accurate analysis, validation, and decision-making.
+      </p>
+    </div>
+
+    <!-- Search + Filter + Create -->
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="applyFilter()"
+          type="text"
+          placeholder="Search"
+          class="pl-8 pr-3 py-2 text-[13px] border border-slate-200 rounded-lg bg-white outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 w-44 transition-all"
+        />
+      </div>
+      <button class="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-slate-600 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        Filter
+      </button>
+      <button
+        *ngIf="isUser"
+        (click)="createNew()"
+        class="flex items-center gap-1.5 px-4 py-2 text-[13px] font-bold text-white rounded-lg transition-all hover:opacity-90"
+        style="background: linear-gradient(135deg,#7c3aed,#4f46e5,#2563eb);">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Create Legal Contract
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Overview Cards ──────────────────────────────────────── -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+    <!-- Total Contract -->
+    <div class="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm">
+      <div class="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+        <svg width="22" height="22" fill="none" stroke="#6366f1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-[28px] font-extrabold text-[#1F2937] leading-none">{{ totalContract }}</p>
+        <p class="text-[12px] text-[#64748B] mt-0.5 font-medium">Total Contract</p>
+      </div>
+    </div>
+    <!-- On Going -->
+    <div class="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm">
+      <div class="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+        <svg width="22" height="22" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+          <line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="13" y2="15"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-[28px] font-extrabold text-[#F59E0B] leading-none">{{ onGoing }}</p>
+        <p class="text-[12px] text-[#64748B] mt-0.5 font-medium">On Going</p>
+      </div>
+    </div>
+    <!-- Accepted & Close -->
+    <div class="bg-white rounded-2xl p-4 flex items-center gap-4 border border-slate-100 shadow-sm">
+      <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+        <svg width="22" height="22" fill="none" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-[28px] font-extrabold text-[#10B981] leading-none">{{ acceptedAndClose }}</p>
+        <p class="text-[12px] text-[#64748B] mt-0.5 font-medium">Accepted &amp; Close</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table ───────────────────────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div *ngIf="isLoading" class="px-4 py-3 text-[12px] text-indigo-600 border-b border-slate-100 bg-indigo-50/40">
+      Loading contracts from API...
+    </div>
+    <div *ngIf="loadError" class="px-4 py-3 text-[12px] text-red-600 border-b border-red-100 bg-red-50">
+      {{ loadError }}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-[13px]">
+        <thead>
+          <tr class="border-b border-slate-100 bg-slate-50">
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap w-10">No</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Tipe Request</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937]">Judul Kontrak</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Customer</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Project Code</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">PIC Kontrak 1</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">SPV/Other Member</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Status</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Rows -->
+          <tr *ngFor="let c of pagedItems; let i = index"
+              class="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
+            <td class="px-4 py-3 text-slate-500 font-medium">{{ showingStart + i }}</td>
+            <td class="px-4 py-3 text-slate-600">{{ c.tipeRequest }}</td>
+            <td class="px-4 py-3 max-w-[220px]">
+              <span class="text-[#2563EB] font-medium hover:underline cursor-pointer leading-snug line-clamp-2"
+                    (click)="viewDetail(c)">{{ c.judulKontrak }}</span>
+            </td>
+            <td class="px-4 py-3 text-slate-700 whitespace-nowrap">{{ c.customer }}</td>
+            <td class="px-4 py-3 text-slate-600 whitespace-nowrap font-mono text-[12px]">{{ c.projectCode }}</td>
+            <td class="px-4 py-3 text-slate-700 whitespace-nowrap">{{ c.picKontrak1 }}</td>
+            <td class="px-4 py-3 text-slate-700 whitespace-nowrap">{{ c.spvOtherMember }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span [class]="'status-badge ' + statusClass(c.status)">{{ c.status }}</span>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <button (click)="viewPreview(c)"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-[#2563EB] bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-100">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  View
+                </button>
+                <button *ngIf="isUser" (click)="viewDetail(c)"
+                        class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-200">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                  </svg>
+                  Detail Contract
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty state -->
+          <tr *ngIf="pagedItems.length === 0">
+            <td colspan="9" class="px-4 py-16 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </div>
+                <p class="text-[14px] font-semibold text-slate-500">No contracts found</p>
+                <p *ngIf="isUser" class="text-[12px] text-slate-400">Click "Create Legal Contract" to add your first contract.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination bar -->
+    <div class="flex items-center justify-between px-4 py-3 border-t border-slate-100 flex-wrap gap-2">
+      <!-- Items per page -->
+      <div class="flex items-center gap-2 text-[12px] text-slate-500">
+        <span>Items per page: <strong>10</strong></span>
+      </div>
+
+      <!-- Page info + nav -->
+      <div class="flex items-center gap-1 text-[12px] text-slate-500">
+        <span class="mr-2">{{ showingStart }}-{{ showingEnd }} of {{ totalShownCount }}</span>
+        <button (click)="goPage(1)" [disabled]="currentPage === 1"
+                class="w-9 h-7 flex items-center justify-center gap-0.5 rounded-md hover:bg-slate-100 disabled:opacity-40">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="11 7 6 12 11 17"/></svg>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="11 7 6 12 11 17"/></svg>
+        </button>
+        <button (click)="goPage(currentPage - 1)" [disabled]="currentPage === 1"
+                class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 disabled:opacity-40">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <ng-container *ngFor="let n of pageNumbers">
+          <span *ngIf="n === -1" class="px-1">…</span>
+          <button *ngIf="n !== -1" (click)="goPage(n)"
+                  [class]="'w-7 h-7 flex items-center justify-center rounded-md font-semibold transition-colors ' + (n === currentPage ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100 text-slate-600')">
+            {{ n }}
+          </button>
+        </ng-container>
+        <button (click)="goPage(currentPage + 1)" [disabled]="currentPage === totalPages"
+                class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 disabled:opacity-40">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button (click)="goPage(totalPages)" [disabled]="currentPage === totalPages"
+                class="w-9 h-7 flex items-center justify-center gap-0.5 rounded-md hover:bg-slate-100 disabled:opacity-40">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 7 14 12 9 17"/></svg>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 7 14 12 9 17"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

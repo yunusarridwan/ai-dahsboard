@@ -1,0 +1,426 @@
+<div class="flex flex-col bg-[#F8FAFC]" style="height:100vh;">
+
+  <!-- ── Save Toast ─────────────────────────────────────────────── -->
+  <div *ngIf="saveSuccess"
+       class="fixed top-6 right-5 z-[999] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl bg-white border border-emerald-100"
+       style="min-width:270px;animation:slideUpIn .3s ease">
+    <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+    <div>
+      <p class="text-[13px] font-bold text-[#1F2937]">Contract Saved</p>
+      <p class="text-[11px] text-[#64748B] mt-0.5">Legal contract has been saved successfully.</p>
+    </div>
+    <!-- Download log button -->
+    <button *ngIf="lastSubmitLog.length > 0" (click)="downloadLog()"
+            title="Download submission log"
+            class="ml-2 shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors border border-indigo-100">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Log
+    </button>
+  </div>
+
+  <!-- ── Page Header ────────────────────────────────────────────── -->
+  <div class="px-5 pt-5 pb-3 flex items-center justify-between gap-3 flex-wrap border-b border-slate-100 bg-white">
+    <div class="flex items-center gap-3">
+      <button (click)="goBack()"
+              class="flex items-center gap-1.5 text-[13px] font-semibold text-[#2563EB] hover:opacity-80 transition-opacity">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+      <span class="text-slate-300">|</span>
+      <h1 class="text-[15px] font-bold text-[#1F2937]">
+        {{ isCreateMode ? 'Create Legal Contract' : 'Detail Legal Contract' }}
+      </h1>
+    </div>
+    <!-- Contract ID badge -->
+    <div class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-[13px] font-bold"
+         style="background:linear-gradient(135deg,#4f46e5,#2563eb);">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+      </svg>
+      Contract ID : {{ contractId }}
+    </div>
+  </div>
+
+  <!-- ── Main 3-column body ──────────────────────────────────────── -->
+  <div class="flex flex-col lg:flex-row gap-0 flex-1 min-h-0 overflow-hidden">
+
+    <!-- ══ LEFT COLUMN: Form ══════════════════════════════════════ -->
+    <div class="flex-1 min-w-0 overflow-y-auto p-5 space-y-5">
+
+      <!-- Contract Review Request card -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h2 class="text-[13px] font-bold text-[#1F2937] mb-4 pb-2 border-b border-slate-100">Contract Review Request</h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+
+          <!-- Tipe Request -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Tipe Request</label>
+            <select [(ngModel)]="tipeRequest" class="field-select">
+              <option *ngFor="let opt of tipeRequestOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <!-- Judul Kontrak (full width) -->
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="field-label">Judul Kontrak</label>
+            <input [(ngModel)]="judulKontrak" type="text" class="field-input" placeholder="Enter judul kontrak" />
+          </div>
+
+          <!-- Customer Type -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Customer Type</label>
+            <div class="flex gap-2 flex-wrap">
+              <button *ngFor="let opt of customerTypeOptions"
+                      (click)="customerType = opt"
+                      [class]="'toggle-btn ' + (customerType === opt ? 'toggle-btn-active' : '')">
+                {{ opt }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Related PID -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Related PID</label>
+            <div class="flex gap-2 flex-wrap">
+              <button *ngFor="let opt of relatedPidOptions"
+                      (click)="relatedPid = opt"
+                      [class]="'toggle-btn ' + (relatedPid === opt ? 'toggle-btn-active' : '')">
+                {{ opt }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Choose Customer -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Choose Customer</label>
+            <select [(ngModel)]="customer" class="field-select">
+              <option value="">Select customer</option>
+              <option *ngFor="let opt of customerOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <!-- Project Code -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Project Code</label>
+            <select [(ngModel)]="projectCode" class="field-select">
+              <option value="">Select project code</option>
+              <option *ngFor="let opt of projectCodeOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <!-- PIC Kontrak 1 -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">PIC Kontrak 1</label>
+            <select [(ngModel)]="picKontrak1" class="field-select">
+              <option value="">Select PIC</option>
+              <option *ngFor="let opt of picKontrak1Options" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <!-- SPV/Other Member -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">SPV/Other Member</label>
+            <select [(ngModel)]="spvOtherMember" class="field-select">
+              <option value="">Select member</option>
+              <option *ngFor="let opt of spvMemberOptions" [value]="opt">{{ opt }}</option>
+            </select>
+          </div>
+
+          <!-- Project Dec -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Project Dec</label>
+            <input [(ngModel)]="projectDec" type="text" class="field-input" placeholder="Project description" />
+          </div>
+
+          <!-- PID Reference -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">PID Reference</label>
+            <input [(ngModel)]="pidReference" type="text" class="field-input" placeholder="PID reference" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Arsip Detail card -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+        <h2 class="text-[13px] font-bold text-[#1F2937] mb-4 pb-2 border-b border-slate-100">Arsip Detail</h2>
+
+        <div class="flex flex-col gap-y-4">
+
+          <!-- No Kontrak -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">No Kontrak</label>
+            <input [(ngModel)]="noKontrak" type="text" class="field-input" placeholder="Type here" />
+          </div>
+
+          <!-- Reminder In -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Reminder In</label>
+            <div class="flex gap-2 flex-wrap">
+              <button *ngFor="let opt of reminderOptions"
+                      (click)="reminderIn = opt"
+                      [class]="'toggle-btn ' + (reminderIn === opt ? 'toggle-btn-active' : '')">
+                {{ opt }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Mulai Masa Berlaku Kontrak -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Mulai Masa Berlaku Kontrak</label>
+            <input [(ngModel)]="mulaiMasaBerlaku" type="text" class="field-input" placeholder="Contoh: 13 November 2025" />
+          </div>
+
+          <!-- Selesai Masa Berlaku Kontrak -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Selesai Masa Berlaku Kontrak</label>
+            <input [(ngModel)]="selesaiMasaBerlaku" type="text" class="field-input" placeholder="Isi tanggal atau teks masa berlaku" />
+          </div>
+
+          <!-- No. Ref VDI -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">No. Ref VDI</label>
+            <input [(ngModel)]="noRefVdi" type="text" class="field-input" placeholder="Type here" />
+          </div>
+
+          <!-- Kode Arsip -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Kode Arsip</label>
+            <input [(ngModel)]="kodeArsip" type="text" class="field-input" placeholder="Type here" />
+          </div>
+
+          <!-- Notes -->
+          <div class="flex flex-col gap-1.5">
+            <label class="field-label">Notes</label>
+            <textarea [(ngModel)]="notes" rows="3" class="field-input resize-none" placeholder="Type here"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MIDDLE COLUMN: Attachment Detail ═══════════════════════ -->
+    <div class="lg:w-[280px] shrink-0 flex flex-col border-l border-slate-100 overflow-y-auto p-5">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col flex-1">
+        <h2 class="text-[13px] font-bold text-[#1F2937] mb-4 pb-2 border-b border-slate-100">Attachment Detail</h2>
+
+        <!-- Drop zone -->
+        <div class="drop-zone"
+             [class.drag-over]="isDragOver"
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave()"
+             (drop)="onDrop($event)"
+             (click)="fileInput.click()">
+          <svg width="32" height="32" fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" class="mx-auto mb-2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p class="text-[12px] text-slate-500 font-medium text-center leading-snug">
+            Drag your file(s) to start uploading<br />
+            <span class="text-slate-400 font-normal">OR</span>
+          </p>
+          <button type="button"
+                  (click)="$event.stopPropagation(); fileInput.click()"
+                  class="mt-2 flex items-center gap-1.5 mx-auto px-4 py-2 rounded-lg border border-slate-300 text-[12px] font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Browse File
+          </button>
+          <p class="text-[10px] text-slate-400 text-center mt-2">Format: pdf / docx / .doc — Max 10MB</p>
+        </div>
+        <input #fileInput type="file" class="hidden" accept=".pdf,.doc,.docx" multiple (change)="onFileSelect($event)" />
+
+        <!-- Upload error -->
+        <p *ngIf="uploadError" class="text-[11px] text-red-500 mt-2 flex items-center gap-1">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {{ uploadError }}
+        </p>
+
+        <!-- Staged files (waiting for submit) -->
+        <div *ngIf="localFiles.length > 0" class="mt-3 space-y-1.5">
+          <p class="text-[10px] font-semibold text-amber-600 uppercase tracking-wide mb-1">Pending Verification</p>
+          <div *ngFor="let f of localFiles; let i = index"
+               class="flex items-center gap-2 p-2 rounded-xl border border-amber-100 bg-amber-50 group">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-100">
+              <svg width="16" height="16" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-semibold text-slate-700 truncate leading-tight">{{ f.file.name }}</p>
+              <p class="text-[10px]" [ngClass]="stagedStatusClass(f.status)">
+                {{ formatSize(f.file.size) }} · {{ stagedStatusText(f.status) }}
+                <span *ngIf="f.note"> · {{ f.note }}</span>
+              </p>
+            </div>
+            <button (click)="removeStagedFile(i)"
+                    class="shrink-0 text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Verified/uploaded files list -->
+        <div *ngIf="uploadedFiles.length > 0" class="mt-4 space-y-2">
+          <div *ngFor="let f of uploadedFiles; let i = index"
+               class="flex items-center gap-2 p-2 rounded-xl border border-slate-100 bg-slate-50 group">
+            <!-- Icon -->
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                 [class.bg-red-50]="getFileIcon(f.name) === 'pdf'"
+                 [class.bg-blue-50]="getFileIcon(f.name) === 'word'"
+                 [class.bg-slate-100]="getFileIcon(f.name) === 'other'">
+              <!-- PDF icon -->
+              <svg *ngIf="getFileIcon(f.name) === 'pdf'" width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <!-- Word icon -->
+              <svg *ngIf="getFileIcon(f.name) === 'word'" width="16" height="16" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <!-- Other icon -->
+              <svg *ngIf="getFileIcon(f.name) === 'other'" width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+
+            <!-- Name + size -->
+            <div class="flex-1 min-w-0">
+              <p class="text-[11px] font-semibold text-slate-700 truncate leading-tight">{{ f.name }}</p>
+              <p class="text-[10px] text-slate-400">{{ formatSize(f.size) }} · {{ formatDate(f.uploadedAt) }}</p>
+            </div>
+
+            <!-- Remove -->
+            <button (click)="removeUploadedFile(i)"
+                    class="shrink-0 text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- AI notice -->
+        <div class="mt-4 flex gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100">
+          <svg width="14" height="14" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24" class="shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p class="text-[10px] text-[#2563EB] leading-snug">
+            <strong>AI Assistance:</strong> AI analysis is provided as an assistance tool and does not replace legal judgement.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT COLUMN: Approval Log ═════════════════════════════ -->
+    <div class="lg:w-[240px] shrink-0 flex flex-col border-l border-slate-100 p-5">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col flex-1 min-h-0">
+        <h2 class="text-[13px] font-bold text-[#1F2937] mb-4 pb-2 border-b border-slate-100 shrink-0">Approval Log</h2>
+
+        <!-- Empty log -->
+        <div *ngIf="approvalLog.length === 0" class="flex flex-col items-center gap-2 py-6 text-center">
+          <div class="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <p class="text-[12px] text-slate-400 font-medium">No approvals yet</p>
+          <p class="text-[11px] text-slate-300 leading-snug">Log will appear after submission.</p>
+        </div>
+
+        <!-- Log entries -->
+        <div *ngIf="approvalLog.length > 0" class="space-y-4 flex-1 overflow-y-auto pr-1">
+          <div *ngFor="let entry of approvalLog; let last = last" class="relative">
+            <div class="flex gap-3">
+              <!-- Avatar -->
+              <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-[11px] text-white"
+                   [style.background]="entry.action === 'Submitted' ? '#7c3aed' : entry.action === 'Accepted' ? '#10b981' : '#2563eb'">
+                {{ entry.userName.charAt(0).toUpperCase() }}
+              </div>
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-1">
+                  <p class="text-[12px] font-bold text-slate-800 leading-tight">{{ entry.userName }}</p>
+                  <span [class]="'log-badge ' + actionBadgeClass(entry.action)">{{ entry.action }}</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ entry.userRole | titlecase }}</p>
+                <p class="text-[10px] text-slate-400">{{ formatDate(entry.date) }}</p>
+                <p *ngIf="entry.comment" class="text-[11px] text-slate-600 mt-1 leading-snug">{{ entry.comment }}</p>
+              </div>
+            </div>
+            <!-- Connector line -->
+            <div *ngIf="!last" class="absolute left-4 top-8 bottom-0 w-px bg-slate-100 -mb-4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bottom Action Bar ─────────────────────────────────────── -->
+  <div class="sticky bottom-0 bg-white border-t border-slate-100 px-5 py-3 flex items-center justify-between gap-3 z-20">
+    <!-- Validation error or submit progress -->
+    <div class="flex-1 min-w-0">
+      <p *ngIf="formError" class="text-[12px] text-red-500 font-medium flex items-center gap-1">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        {{ formError }}
+      </p>
+      <p *ngIf="submitProgress && !formError" class="text-[12px] text-indigo-600 font-medium flex items-center gap-1.5">
+        <svg class="animate-spin w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+        </svg>
+        {{ submitProgress }}
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <button (click)="cancel()" [disabled]="isSaving"
+              class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        Cancel
+      </button>
+      <button (click)="submit()" [disabled]="isSaving || saveSuccess"
+              class="flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              style="background:linear-gradient(135deg,#4f46e5,#2563eb);">
+        <ng-container *ngIf="!isSaving">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          Submit
+        </ng-container>
+        <ng-container *ngIf="isSaving">
+          <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          {{ localFiles.length > 0 ? 'Verifying...' : 'Saving...' }}
+        </ng-container>
+      </button>
+    </div>
+  </div>
+
+</div>

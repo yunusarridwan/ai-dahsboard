@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  ai-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ai-dashboard:latest
+    container_name: ai-dashboard
+    ports:
+      - "80:80"
+    restart: unless-stopped
