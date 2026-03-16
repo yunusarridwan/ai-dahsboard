@@ -18,6 +18,7 @@ interface VerifyModel {
   status: string;
   ringkasan: string;
   persentase: string;
+  detail?: VerifyDetailItem[];
 }
 
 interface VerifyDetailItem {
@@ -40,6 +41,7 @@ interface StagedFile {
   note?: string;
   verified?: LegalContractFile;
   verifyModel?: VerifyModel;
+  verifyRawModel?: Record<string, unknown>;
 }
 
 interface SaveContractRequest {
@@ -307,6 +309,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
       next: (res) => {
         const payload = this.toObjectPayload(res);
         const directModel = this.directModel(payload);
+        const rawModel = this.extractRawModel(payload);
 
         // Hard direct mapping for API shape: { model: { judul, no_kontrak, berlaku_kontrak, selesai_kontrak, ringkasan } }
         if (directModel.judul) this.judulKontrak = directModel.judul;
@@ -320,6 +323,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
         const apiPath = this.extractFilePath(payload);
         const pct = this.parsePersentase(model.persentase);
         staged.verifyModel = model;
+        staged.verifyRawModel = rawModel;
 
         // Map API response into contract form fields as requested.
         let mappedCount = 0;
@@ -414,13 +418,34 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
       status: this.pickString(merged, ['status']),
       ringkasan: this.pickString(merged, ['ringkasan', 'summary']),
       persentase: this.pickString(merged, ['persentase', 'percentage']),
+      detail: this.extractVerifyDetail(payload),
     };
+  }
+
+  private extractRawModel(payload: Record<string, unknown>): Record<string, unknown> {
+    const root = payload ?? {};
+    const maybeModel =
+      root['model'] ??
+      (root['data'] as Record<string, unknown> | undefined)?.['model'] ??
+      root['data'] ??
+      {};
+
+    const parsed = this.parseMaybeJson(maybeModel);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
   }
 
   private extractVerifyDetail(payload: Record<string, unknown>): VerifyDetailItem[] {
     const root = payload ?? {};
+    const parsedModel = this.parseMaybeJson(root['model']);
+    const parsedData = this.parseMaybeJson(root['data']);
+
     const candidates: unknown[] = [
       root['detail'],
+      (parsedModel as Record<string, unknown> | undefined)?.['detail'],
+      (parsedData as Record<string, unknown> | undefined)?.['detail'],
       (root['model'] as Record<string, unknown> | undefined)?.['detail'],
       (root['data'] as Record<string, unknown> | undefined)?.['detail'],
       ((root['data'] as Record<string, unknown> | undefined)?.['model'] as Record<string, unknown> | undefined)?.['detail'],
@@ -597,17 +622,13 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
 
   private buildSavePayload(allFiles: LegalContractFile[]): SaveContractRequest {
     const firstFile = allFiles[0];
-    const firstVerified = this.localFiles.find(s => s.status === 'verified' && s.verifyModel)?.verifyModel;
+    const firstVerifiedStage = this.localFiles.find(s => s.status === 'verified' && s.verifyModel);
+    const firstVerified = firstVerifiedStage?.verifyModel;
     const contractStartDate = this.toIsoDateTime(this.mulaiMasaBerlaku);
     const contractEndDate = this.toIsoDateTime(this.selesaiMasaBerlaku);
     const status = firstVerified?.status?.trim() || firstFile?.aiStatus || this.savedStatus || 'Submitted';
     const persentase = firstVerified ? this.parsePersentase(firstVerified.persentase) : 0;
-
-    const dataPayload = {
-      model: {
-        status,
-      },
-    };
+    const dataPayload = this.buildDataPayload(firstVerifiedStage);
 
     return {
       requestType: this.tipeRequest,
@@ -632,6 +653,27 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
       status,
       persentase,
       data: JSON.stringify(dataPayload),
+    };
+  }
+
+  private buildDataPayload(stage?: StagedFile): Record<string, unknown> {
+    if (!stage) return {};
+
+    const rawModel = { ...(stage.verifyRawModel ?? {}) };
+    const detail = stage.verified?.aiDetail ?? stage.verifyModel?.detail ?? [];
+    const status = stage.verifyModel?.status?.trim() || stage.verified?.aiStatus || '';
+
+    if (!rawModel['detail'] && detail.length) {
+      rawModel['detail'] = detail;
+    }
+    if (!rawModel['status'] && status) {
+      rawModel['status'] = status;
+    }
+
+    if (Object.keys(rawModel).length > 0) return rawModel;
+    return {
+      status,
+      detail,
     };
   }
 

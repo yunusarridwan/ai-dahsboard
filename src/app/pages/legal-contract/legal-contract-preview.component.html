@@ -206,6 +206,7 @@
           </svg>
           AI verdict: <strong>{{ selectedFile!.aiStatus }}</strong>
         </div>
+        <p *ngIf="findingJumpMessage" class="finding-jump-hint">{{ findingJumpMessage }}</p>
 
         <!-- Empty state -->
         <div *ngIf="!annotations.length" class="panel-empty">
@@ -218,7 +219,10 @@
         </div>
 
         <!-- Finding cards -->
-        <div *ngFor="let a of annotations; let i = index" class="finding-card">
+        <div *ngFor="let a of annotations; let i = index"
+             class="finding-card"
+             [class.finding-card-active]="activeFindingIndex === i"
+             (click)="jumpToFinding(a, i)">
           <div class="finding-header">
             <span class="finding-num">{{ i + 1 }}</span>
             <span class="finding-topic">{{ a.Topik }}</span>

@@ -78,6 +78,9 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   // right panel tab
   activeTab: 'annotations' | 'comments' | 'docComments' = 'annotations';
   activeCommentId: string | null = null;  // id of the currently highlighted comment
+  activeFindingIndex: number | null = null;
+  findingJumpMessage = '';
+  private findingFlashTimer?: ReturnType<typeof setTimeout>;
 
   newComment = '';
 
@@ -106,6 +109,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.revokeLocalUrl();
+    clearTimeout(this.findingFlashTimer);
   }
 
   private loadContract(): void {
@@ -147,6 +151,8 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     this.pdfUrl       = null;
     this.docComments  = [];
     this.docLoadError = '';
+    this.findingJumpMessage = '';
+    this.activeFindingIndex = null;
     this.isLocalCopy  = false;
     this.docxRendered = false;
     this.revokeLocalUrl();
@@ -274,7 +280,19 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     item: ApiContractByIdItem,
     local?: LegalContract | null
   ): { Topik: string; Posisi: string; deskripsi: string }[] {
-    const candidates: unknown[] = [item.detail, item.data];
+    const dataObj = (item.data && typeof item.data === 'object' && !Array.isArray(item.data))
+      ? item.data as Record<string, unknown>
+      : null;
+    const modelObj = (dataObj?.['model'] && typeof dataObj['model'] === 'object' && !Array.isArray(dataObj['model']))
+      ? dataObj['model'] as Record<string, unknown>
+      : null;
+
+    const candidates: unknown[] = [
+      item.detail,
+      dataObj?.['detail'],
+      modelObj?.['detail'],
+      item.data,
+    ];
 
     for (const c of candidates) {
       const rows = this.normalizeDetailRows(c);
@@ -286,6 +304,9 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
         const parsed = JSON.parse(item.data) as Record<string, unknown>;
         const rows = this.normalizeDetailRows(
           parsed['detail']
+          ?? (parsed['data'] as Record<string, unknown> | undefined)?.['detail']
+          ?? (parsed['model'] as Record<string, unknown> | undefined)?.['detail']
+          ?? ((parsed['data'] as Record<string, unknown> | undefined)?.['model'] as Record<string, unknown> | undefined)?.['detail']
           ?? parsed['verifySummary']
           ?? parsed['result']
           ?? parsed['findings']
@@ -752,6 +773,111 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
   get annotations(): { Topik: string; Posisi: string; deskripsi: string }[] {
     return this.selectedFile?.aiDetail ?? [];
+  }
+
+  jumpToFinding(a: { Topik: string; Posisi: string; deskripsi: string }, idx: number): void {
+    this.activeFindingIndex = idx;
+    this.findingJumpMessage = '';
+
+    if (!this.selectedFile) return;
+    if (this.isPdf(this.selectedFile.name)) {
+      this.findingJumpMessage = 'Jump to clause is available for DOC/DOCX documents.';
+      return;
+    }
+
+    const posisi = (a.Posisi ?? '').trim();
+    if (!posisi || posisi.toLowerCase().includes('tidak ditemukan')) {
+      this.findingJumpMessage = 'Clause position is not available for this finding.';
+      return;
+    }
+
+    const container = document.querySelector('.doc-html-view') as HTMLElement | null;
+    const searchRoot = this.docxContainer?.nativeElement ?? container;
+    if (!searchRoot) {
+      this.findingJumpMessage = 'Document viewer is not ready yet.';
+      return;
+    }
+
+    const clauseToken = this.extractClauseToken(posisi);
+    const target = this.findClauseHeaderAnchor(searchRoot, clauseToken);
+    if (!target) {
+      this.findingJumpMessage = `Exact clause header ${posisi} was not found in this document.`;
+      return;
+    }
+
+    this.scrollElementIntoView(target, container);
+    this.flashFindingTarget(target);
+    this.findingJumpMessage = `Jumped to ${posisi}.`;
+  }
+
+  private extractClauseToken(posisi: string): string {
+    const normalized = posisi.replace(/\s+/g, ' ').trim();
+    const m = normalized.match(/pasal\s*[:\-]?\s*(\d+[a-z]?)/i);
+    if (m?.[1]) return `pasal ${m[1]}`;
+    return normalized;
+  }
+
+  private findClauseHeaderAnchor(root: HTMLElement, clauseToken: string): HTMLElement | null {
+    const target = clauseToken.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!target) return null;
+
+    const candidates = Array.from(root.querySelectorAll('p,h1,h2,h3,h4,h5,h6,div,span'));
+    let best: { el: HTMLElement; score: number } | null = null;
+
+    for (const el of candidates) {
+      const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (!text || !text.includes(target)) continue;
+
+      const exactClause = /^pasal\s*[:\-]?\s*\d+[a-z]?$/i.test(text);
+      const startsWith = text.startsWith(target);
+      const shortText = text.length <= Math.max(18, target.length + 8);
+      const headingLike = /pasal\s*[:\-]?\s*\d+[a-z]?/i.test(text);
+      const normalizedExact = text.replace(/\s+/g, ' ') === target;
+
+      let score = 0;
+      if (exactClause) score += 120;
+      if (normalizedExact) score += 100;
+      if (startsWith) score += 70;
+      if (shortText) score += 40;
+      if (headingLike) score += 30;
+      if (text.includes('ayat')) score -= 15;
+
+      if (!best || score > best.score) {
+        best = { el: el as HTMLElement, score };
+      }
+    }
+
+    return best?.el ?? null;
+  }
+
+  private scrollElementIntoView(target: HTMLElement, container: HTMLElement | null): void {
+    if (!container) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offset = targetRect.top - containerRect.top + container.scrollTop
+      - container.clientHeight / 2 + targetRect.height / 2;
+    container.scrollTo({ top: offset, behavior: 'smooth' });
+  }
+
+  private flashFindingTarget(target: HTMLElement): void {
+    clearTimeout(this.findingFlashTimer);
+    target.classList.remove('finding-hit');
+    target.classList.remove('finding-hit-heading');
+
+    const normalized = (target.textContent ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const isClauseHeading = /^pasal\s*[:\-]?\s*\d+[a-z]?$/i.test(normalized);
+
+    // Force reflow to restart animation when same target is clicked repeatedly.
+    void target.offsetWidth;
+    target.classList.add(isClauseHeading ? 'finding-hit-heading' : 'finding-hit');
+    this.findingFlashTimer = setTimeout(() => {
+      target.classList.remove('finding-hit');
+      target.classList.remove('finding-hit-heading');
+    }, 1800);
   }
 
   posisiColor(posisi: string): string {
