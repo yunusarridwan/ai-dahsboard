@@ -58,6 +58,7 @@ interface ApiContractByIdItem {
 export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   private readonly GET_BY_ID_URL = '/api/contractAI/getbyid';
   private readonly PREVIEW_URL = '/api/contractAI/preview';
+  private readonly PREVIEW_DIRECT_URL = 'https://cataplastic-maziest-mary.ngrok-free.dev/api/contractAI/preview';
 
   @ViewChild('docxContainer') docxContainer?: ElementRef<HTMLDivElement>;
 
@@ -358,9 +359,13 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
   private apiHeaders(): HttpHeaders {
     return new HttpHeaders({
-      Accept: 'application/json',
+      Accept: '*/*',
       'ngrok-skip-browser-warning': 'true',
     });
+  }
+
+  private directPreviewUrlForId(id: string): string {
+    return `${this.PREVIEW_DIRECT_URL}?id=${encodeURIComponent(id)}`;
   }
 
   private findLocalContract(id: string): LegalContract | null {
@@ -1003,6 +1008,11 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
         URL.revokeObjectURL(objectUrl);
       },
     });
+  }
+
+  openTempPreview(): void {
+    const url = this.directPreviewUrlForId(this.contractId);
+    window.open(url, '_blank', 'noopener,noreferrer');
   }
 
   formatDate(iso: string): string {

@@ -192,6 +192,26 @@
 }
 .btn-dl:hover { opacity: .9; }
 
+.btn-temp-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn-temp-preview:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
 .link-btn {
   background: none;
   border: none;
