@@ -18,6 +18,7 @@ interface VerifyModel {
   status: string;
   ringkasan: string;
   persentase: string;
+  detail:VerifyDetailItem[];
 }
 
 interface VerifyDetailItem {
@@ -414,6 +415,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
       status: this.pickString(merged, ['status']),
       ringkasan: this.pickString(merged, ['ringkasan', 'summary']),
       persentase: this.pickString(merged, ['persentase', 'percentage']),
+      detail: (merged['detail'] ?? []) as VerifyDetailItem[],
     };
   }
 
@@ -597,17 +599,30 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
 
   private buildSavePayload(allFiles: LegalContractFile[]): SaveContractRequest {
     const firstFile = allFiles[0];
-    const firstVerified = this.localFiles.find(s => s.status === 'verified' && s.verifyModel)?.verifyModel;
+    // const firstVerified = this.localFiles.find(s => s.status === 'verified' && s.verifyModel)?.verifyModel;
+      const firstVerified = this.localFiles.find(
+    s => s.status === 'verified' && s.verifyModel
+  )?.verifyModel;
     const contractStartDate = this.toIsoDateTime(this.mulaiMasaBerlaku);
     const contractEndDate = this.toIsoDateTime(this.selesaiMasaBerlaku);
     const status = firstVerified?.status?.trim() || firstFile?.aiStatus || this.savedStatus || 'Submitted';
     const persentase = firstVerified ? this.parsePersentase(firstVerified.persentase) : 0;
 
-    const dataPayload = {
-      model: {
-        status,
-      },
-    };
+    // const dataPayload = {
+    //   model: {
+    //     status,
+    //   },
+    // };
+
+  const dataPayload = {
+    // model: {
+      status: status,
+      judul: firstVerified?.judul ?? null,
+      ringkasan: firstVerified?.ringkasan ?? null,
+      persentase: persentase.toString(),
+      detail: firstVerified?.detail ?? []
+    // }
+  };
 
     return {
       requestType: this.tipeRequest,

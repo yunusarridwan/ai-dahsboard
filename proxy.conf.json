@@ -1,6 +1,6 @@
 {
   "/api/contractAI": {
-    "target": "https://cataplastic-maziest-mary.ngrok-free.dev",
+    "target": "http://dev.lippo.homes:1971/",
     "secure": true,
     "changeOrigin": true,
     "logLevel": "debug"

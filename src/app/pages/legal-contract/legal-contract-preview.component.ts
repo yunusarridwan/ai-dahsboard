@@ -118,7 +118,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
           this.loadContractFromLocal();
           return;
         }
-
+        console.log(apiItem);
         this.contract = this.mapApiItemToContract(apiItem);
         this.persistContractSnapshot();
         if (this.contract.fileUploads?.length) this.selectFile(this.contract.fileUploads[0]);
@@ -232,7 +232,11 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
   private mapApiItemToContract(item: ApiContractByIdItem): LegalContract {
     const local = this.findLocalContract(item.id);
-    const detail = this.extractAiDetail(item, local);
+    // const detail = this.extractAiDetail(item, local);
+    console.log("data : ",item);
+    const detail = this.extractAiDetail(item);
+    // console.log(local);
+    console.log(detail);
     const fileName = item.nameFile || `contract-${item.id}.docx`;
 
     return {
@@ -274,10 +278,17 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     item: ApiContractByIdItem,
     local?: LegalContract | null
   ): { Topik: string; Posisi: string; deskripsi: string }[] {
-    const candidates: unknown[] = [item.detail, item.data];
+    const candidates: unknown[] = [item.data, item.detail];
 
     for (const c of candidates) {
+      console.log("data c = ", c);
       const rows = this.normalizeDetailRows(c);
+      console.log("rows",rows);
+      if (rows.length) return rows;
+    }
+
+    if (item.data && typeof item.data === 'object') {
+      const rows = this.normalizeDetailRows((item.data as any).detail);
       if (rows.length) return rows;
     }
 
@@ -290,6 +301,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
           ?? parsed['result']
           ?? parsed['findings']
         );
+        console.log("Rowss = ", rows);
         if (rows.length) return rows;
       } catch {}
     }
@@ -401,15 +413,29 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
   private async parseDocx(buf: ArrayBuffer): Promise<void> {
     // 1 — convert docx -> HTML fallback; map comment-reference to a hidden span to suppress [V1] markers
-    const mam = await import('mammoth');
-    const result = await mam.convertToHtml(
+    // const mam = await import('mammoth');
+    // const result = await mam.convertToHtml(
+    //   { arrayBuffer: buf },
+    //   {
+    //     styleMap: [
+    //       "p[style-name='Heading 1'] => h3.doc-h1:fresh",
+    //       "p[style-name='Heading 2'] => h4.doc-h2:fresh",
+    //       "p[style-name='Heading 3'] => h5.doc-h3:fresh",
+    //       "comment-reference         => span.cmt-ref-hidden"
+    //     ]
+    //   }
+    // );
+    const mammothModule = await import('mammoth');
+    const mammoth = mammothModule.default ?? mammothModule;
+
+    const result = await mammoth.convertToHtml(
       { arrayBuffer: buf },
       {
         styleMap: [
           "p[style-name='Heading 1'] => h3.doc-h1:fresh",
           "p[style-name='Heading 2'] => h4.doc-h2:fresh",
           "p[style-name='Heading 3'] => h5.doc-h3:fresh",
-          "comment-reference         => span.cmt-ref-hidden"
+          "comment-reference => span.cmt-ref-hidden"
         ]
       }
     );
@@ -431,6 +457,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     if (cmtFile) {
       const xml = await cmtFile.async('text');
       comments = this.parseCommentsXml(xml);
+      console.log("comments :", comments);
       for (const dc of comments) {
         const anchored = ranges.get(dc.id);
         if (anchored?.trim()) dc.anchoredText = anchored.trim();
