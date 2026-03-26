@@ -17,7 +17,14 @@ export interface DocComment {
   date: string;
   text: string;
   anchoredText?: string;  // the exact text range this comment is anchored to in the document
+  paraId?: string;
+  parentParaId?: string;
   colorIdx: number;        // 0-7, assigned per unique author
+}
+
+interface DocCommentThread {
+  root: DocComment;
+  replies: DocComment[];
 }
 
 interface ApiContractByIdItem {
@@ -68,6 +75,9 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   docHtml: SafeHtml | null = null;
   pdfUrl: string | null = null;
   docComments: DocComment[] = [];
+  private docCommentThreadsInternal: DocCommentThread[] = [];
+  private commentAnchorDomIdMap = new Map<string, string>();
+  private docxBufferWithBookmarks: ArrayBuffer | null = null;
   isLoadingDoc = false;
   docLoadError = '';
   isLocalCopy  = false;   // true when the document is served from IndexedDB
@@ -146,6 +156,8 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     this.docHtml      = null;
     this.pdfUrl       = null;
     this.docComments  = [];
+    this.commentAnchorDomIdMap.clear();
+    this.docxBufferWithBookmarks = null;
     this.docLoadError = '';
     this.isLocalCopy  = false;
     this.docxRendered = false;
@@ -169,7 +181,8 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
         if (this.isDocx(f.name)) {
           try {
             await this.parseDocx(buf);
-            setTimeout(() => { void this.renderDocxVisual(buf); }, 0);
+            const renderBuf = this.docxBufferWithBookmarks ?? buf;
+            setTimeout(() => { void this.renderDocxVisual(renderBuf); }, 0);
           } catch (e: any) {
             this.docLoadError = `Could not parse document: ${e?.message ?? 'unknown error'}`;
           }
@@ -395,8 +408,10 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
         if (f.aiDetail?.length) this.activeTab = 'annotations';
       } else if (this.isDocx(f.name)) {
         const buf = await stored.arrayBuffer();
+        console.log("Loaded from local IndexedDB cache:", f.name, `(size: ${buf.byteLength} bytes)`);
         await this.parseDocx(buf);
-        setTimeout(() => { void this.renderDocxVisual(buf); }, 0);
+        const renderBuf = this.docxBufferWithBookmarks ?? buf;
+        setTimeout(() => { void this.renderDocxVisual(renderBuf); }, 0);
       }
     } catch (e: any) {
       this.docLoadError = `Could not load local copy: ${e?.message ?? 'unknown error'}`;
@@ -425,11 +440,14 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     //     ]
     //   }
     // );
+    const patchedBuf = await this.injectBookmarksForComments(buf);
+    this.docxBufferWithBookmarks = patchedBuf;
+
     const mammothModule = await import('mammoth');
     const mammoth = mammothModule.default ?? mammothModule;
 
     const result = await mammoth.convertToHtml(
-      { arrayBuffer: buf },
+      { arrayBuffer: patchedBuf },
       {
         styleMap: [
           "p[style-name='Heading 1'] => h3.doc-h1:fresh",
@@ -441,30 +459,37 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     );
 
     const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(buf);
+    const zip = await JSZip.loadAsync(patchedBuf);
 
-    // 2 — extract comment text-ranges from document.xml
-    let ranges = new Map<string, string>();
-    const docXmlFile = zip.file('word/document.xml') ?? zip.file('word/Document.xml');
-    if (docXmlFile) {
-      const docXml = await docXmlFile.async('text');
-      ranges = this.parseDocumentXmlForCommentRanges(docXml);
-    }
+    // 1 — parse extended relation map (word/commentsExtended.xml / commentsExtensible.xml)
+    const relationMap = await this.parseCommentsExtendedRelations(zip);
 
-    // 3 — parse comment metadata
+    // 2 — parse comments content and attach paragraph relation refs
     const cmtFile = zip.file('word/comments.xml') ?? zip.file('word/Comments.xml');
     let comments: DocComment[] = [];
     if (cmtFile) {
       const xml = await cmtFile.async('text');
-      comments = this.parseCommentsXml(xml);
-      console.log("comments :", comments);
-      for (const dc of comments) {
-        const anchored = ranges.get(dc.id);
-        if (anchored?.trim()) dc.anchoredText = anchored.trim();
-      }
+      comments = this.parseCommentsXml(xml, relationMap);
     }
 
-    // 4 — assign a unique color (0-7) per unique author so every person
+    // 3 — parse anchored text from document.xml
+    let ranges = new Map<string, string>();
+    const docXmlFile = zip.file('word/document.xml') ?? zip.file('word/Document.xml');
+    if (docXmlFile) {
+      const docXml = await docXmlFile.async('text');
+      console.log("document.xml loaded, size:", docXml.length);
+      ranges = this.parseDocumentXmlForCommentRanges(docXml);
+    }
+
+    // 4 — merge anchored text into parsed comments and build root/reply threads.
+    for (const dc of comments) {
+      const anchored = ranges.get(dc.id);
+      if (anchored?.trim()) dc.anchoredText = anchored.trim();
+    }
+
+    const threads = this.buildDocCommentThreads(comments);
+
+    // 5 — assign a unique color (0-7) per unique author so every person
     //     gets a consistent color across all their highlights and cards.
     const authorColorMap = new Map<string, number>();
     let nextColor = 0;
@@ -475,7 +500,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       dc.colorIdx = authorColorMap.get(dc.author)!;
     }
 
-    // 5 — build id→colorIdx map (only for comments that have an anchor range)
+    // 6 — build id→colorIdx map (only for comments that have an anchor range)
     const idColorMap = new Map<string, number>();
     for (const dc of comments) {
       if (dc.anchoredText !== undefined) {
@@ -483,17 +508,87 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       }
     }
 
-    // 6 — sanitize mammoth output, then inject colored <mark> anchors, then bypass
+    // 7 — sanitize mammoth output, then inject colored <mark> anchors, then bypass
     const safe       = this.sanitizer.sanitize(SecurityContext.HTML, result.value) ?? '';
-    const markedHtml = this.injectCommentHighlights(safe, ranges, idColorMap);
+    const highlightResult = this.injectCommentHighlights(safe, ranges, idColorMap);
+    const markedHtml = highlightResult.html;
+    this.commentAnchorDomIdMap = highlightResult.anchorMap;
     this.docHtml     = this.sanitizer.bypassSecurityTrustHtml(`<article class="doc-page">${markedHtml}</article>`);
 
-    // 7 — visual rendering is triggered by callers after loading state flips.
+    // 8 — visual rendering is triggered by callers after loading state flips.
     this.docxRendered = false;
 
-    this.docComments = comments;
+    this.docCommentThreadsInternal = threads;
+    this.docComments = this.flattenDocCommentThreads(threads);
     if (comments.length) this.activeTab = 'docComments';
     if (!comments.length && this.annotations.length) this.activeTab = 'annotations';
+  }
+
+  async injectBookmarksForComments(buf: ArrayBuffer): Promise<ArrayBuffer> {
+    const JSZip = (await import('jszip')).default;
+    const zip = await JSZip.loadAsync(buf);
+
+    const docXmlPath = zip.file('word/document.xml')
+      ? 'word/document.xml'
+      : (zip.file('word/Document.xml') ? 'word/Document.xml' : null);
+    if (!docXmlPath) return buf;
+
+    const docXmlFile = zip.file(docXmlPath);
+    if (!docXmlFile) return buf;
+
+    const xml = await docXmlFile.async('text');
+    const withStartBookmarks = xml.replace(
+      /(<w:commentRangeStart\b[^>]*\bw:id="(\d+)"[^>]*\/>)/g,
+      (_full, tag: string, id: string) =>
+        `<w:bookmarkStart w:id="9999${id}" w:name="cmt-anchor-${id}"/><w:bookmarkEnd w:id="9999${id}"/>${tag}`
+    );
+
+    const updatedXml = withStartBookmarks.replace(
+      /(<w:commentRangeEnd\b[^>]*\bw:id="(\d+)"[^>]*\/>)/g,
+      (_full, tag: string, id: string) =>
+        `<w:bookmarkStart w:id="8888${id}" w:name="cmt-anchor-end-${id}"/><w:bookmarkEnd w:id="8888${id}"/>${tag}`
+    );
+
+    if (updatedXml === xml) return buf;
+
+    zip.file(docXmlPath, updatedXml);
+    return await zip.generateAsync({ type: 'arraybuffer' });
+  }
+
+  private async parseCommentsExtendedRelations(zip: any): Promise<Map<string, { parentId?: string }>> {
+    const relationMap = new Map<string, { parentId?: string }>();
+    const candidates = [
+      'word/commentsExtended.xml',
+      'word/commentsExtensible.xml',
+      'word/CommentsExtended.xml',
+      'word/CommentsExtensible.xml',
+    ];
+
+    const file = candidates.map(p => zip.file(p)).find(Boolean);
+    if (!file) return relationMap;
+
+    try {
+      const xml = await file.async('text');
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xml, 'application/xml');
+      const nsW15 = 'http://schemas.microsoft.com/office/word/2012/wordml';
+
+      const nodes = Array.from(xmlDoc.getElementsByTagNameNS(nsW15, 'commentEx'));
+      const fallback = nodes.length > 0
+        ? nodes
+        : Array.from(xmlDoc.querySelectorAll('w15\\:commentEx, commentEx'));
+
+      for (const el of fallback) {
+        const paraId = el.getAttribute('w15:paraId') ?? el.getAttributeNS(nsW15, 'paraId') ?? '';
+        if (!paraId) continue;
+        const parentIdRaw = el.getAttribute('w15:paraIdParent') ?? el.getAttributeNS(nsW15, 'paraIdParent') ?? '';
+        relationMap.set(paraId, { parentId: parentIdRaw || undefined });
+      }
+    } catch {
+      return relationMap;
+    }
+
+    return relationMap;
   }
 
   private async renderDocxVisual(buf: ArrayBuffer): Promise<void> {
@@ -530,56 +625,70 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(xml, 'application/xml');
-      const ns  = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+      const ns = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
       const body = doc.getElementsByTagNameNS(ns, 'body')[0]
-                ?? doc.querySelector('w\\:body, body');
+        ?? doc.querySelector('w\\:body, body');
       if (!body) return result;
 
-      const activeRanges = new Map<string, string>(); // id → accumulated text
-
-      // TreeWalker visits elements in document order (depth-first)
+      const activeRanges = new Map<string, string>();
       const walker = doc.createTreeWalker(body, NodeFilter.SHOW_ELEMENT);
       let node: Node | null = walker.currentNode;
-      while (node) {
-        const el    = node as Element;
-        const local = (el.localName ?? '').toLowerCase();
 
-        if (local === 'commentrangestart') {
+      while (node) {
+        const el = node as Element;
+        const rawName = (el.localName || el.tagName || '').toLowerCase();
+        const tagName = rawName.includes(':') ? rawName.split(':').pop() ?? rawName : rawName;
+
+        if (tagName === 'commentrangestart') {
           const id = el.getAttribute('w:id') ?? el.getAttributeNS(ns, 'id') ?? '';
-          if (id) activeRanges.set(id, '');
-        } else if (local === 't') {
-          const text = el.textContent ?? '';
-          for (const [id] of activeRanges) {
-            activeRanges.set(id, (activeRanges.get(id) ?? '') + text);
+          if (id) activeRanges.set(id, activeRanges.get(id) ?? '');
+        } else if (tagName === 'p' || tagName === 'br') {
+          for (const [id, current] of activeRanges) {
+            activeRanges.set(id, current + ' ');
           }
-        } else if (local === 'commentrangeend') {
+        } else if (tagName === 't') {
+          const text = el.textContent ?? '';
+          for (const [id, current] of activeRanges) {
+            activeRanges.set(id, current + text);
+          }
+        } else if (tagName === 'commentrangeend') {
           const id = el.getAttribute('w:id') ?? el.getAttributeNS(ns, 'id') ?? '';
           if (id && activeRanges.has(id)) {
-            result.set(id, activeRanges.get(id) ?? '');
+            const clean = (activeRanges.get(id) ?? '').replace(/\s+/g, ' ').trim();
+            result.set(id, clean);
             activeRanges.delete(id);
           }
         }
 
         node = walker.nextNode();
       }
-    } catch {}
+    } catch (e) {
+      console.error('Failed to parse document.xml for comment ranges:', e);
+    }
     return result;
   }
-
   /**
    * Wraps anchored text ranges in the raw mammoth HTML with
    * <mark class="cmt-anchor" id="cmt-anchor-{id}"> so they are
    * visible and scrollable in the document viewer.
    */
-  private injectCommentHighlights(html: string, ranges: Map<string, string>, idColorMap: Map<string, number>): string {
+  private injectCommentHighlights(
+    html: string,
+    ranges: Map<string, string>,
+    idColorMap: Map<string, number>
+  ): { html: string; anchorMap: Map<string, string> } {
     let out = html;
-    // Track which exact strings we've already wrapped to avoid double-marking
-    const wrapped = new Set<string>();
+    const anchorMap = new Map<string, string>();
+    const textAnchorFallback = new Map<string, string>();
+
+    const normKey = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 
     for (const [id, rawText] of ranges) {
       const text = rawText.trim();
-      if (!text || wrapped.has(text)) continue;
+      if (!text) continue;
+
+      const textKey = normKey(text);
 
       // mammoth HTML-encodes &, <, > in text content
       const esc = text
@@ -590,14 +699,17 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       if (!esc.trim()) continue;
 
       const c = idColorMap.get(id) ?? 0;
+      const anchorDomId = `cmt-anchor-${id}`;
       const mark = (matched: string) =>
-        `<mark class="cmt-anchor cmt-c${c}" id="cmt-anchor-${id}">${matched}</mark>`;
+        `<mark class="cmt-anchor cmt-c${c}" id="${anchorDomId}">${matched}</mark>`;
 
       // Try 1: literal escaped match
       const exactRe = new RegExp(esc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-      if (exactRe.test(out)) {
-        out = out.replace(exactRe, mark);
-        wrapped.add(text);
+      const exactReplaced = this.replaceFirstOutsideExistingAnchors(out, exactRe, mark);
+      if (exactReplaced !== null) {
+        out = exactReplaced;
+        anchorMap.set(id, anchorDomId);
+        if (!textAnchorFallback.has(textKey)) textAnchorFallback.set(textKey, anchorDomId);
         continue;
       }
 
@@ -608,19 +720,59 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
         .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
       if (words.length > 1) {
         const flexRe = new RegExp(words.join('(?:[\\s\\S]{0,80}?)'));
-        if (flexRe.test(out)) {
-          out = out.replace(flexRe, m => mark(m));
-          wrapped.add(text);
+        const replaced = this.replaceFirstOutsideExistingAnchors(out, flexRe, (m) => mark(m));
+        if (replaced !== null) {
+          out = replaced;
+          anchorMap.set(id, anchorDomId);
+          if (!textAnchorFallback.has(textKey)) textAnchorFallback.set(textKey, anchorDomId);
+          continue;
         }
       }
+
+      // For nested/overlapping ranges with identical text, multiple IDs can point
+      // to the same visual anchor when a second independent <mark> cannot be inserted.
+      const fallbackAnchor = textAnchorFallback.get(textKey);
+      if (fallbackAnchor) {
+        anchorMap.set(id, fallbackAnchor);
+      }
     }
-    return out;
+    return { html: out, anchorMap };
   }
 
-  private parseCommentsXml(xml: string): DocComment[] {
+  private replaceFirstOutsideExistingAnchors(
+    html: string,
+    pattern: RegExp,
+    replacer: (matched: string) => string
+  ): string | null {
+    const anchorBlock = /(<mark\b[^>]*\bcmt-anchor\b[^>]*>[\s\S]*?<\/mark>)/gi;
+    const parts = html.split(anchorBlock);
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i] ?? '';
+      if (!part || i % 2 === 1) continue;
+
+      pattern.lastIndex = 0;
+      const match = pattern.exec(part);
+      if (!match || match.index < 0) continue;
+
+      const start = match.index;
+      const end = start + match[0].length;
+      const replacement = replacer(match[0]);
+      parts[i] = part.slice(0, start) + replacement + part.slice(end);
+      return parts.join('');
+    }
+
+    return null;
+  }
+
+  private parseCommentsXml(
+    xml: string,
+    relationMap: Map<string, { parentId?: string }>
+  ): DocComment[] {
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xml, 'application/xml');
     const ns     = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    const nsW14  = 'http://schemas.microsoft.com/office/word/2010/wordml';
 
     // getElementsByTagNameNS works for elements; for attributes use getAttribute('w:x')
     // because browser DOMParser does not reliably resolve namespace-prefixed attributes
@@ -645,14 +797,93 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       const text = uniqueT.map(t => t.textContent ?? '').join('').trim();
 
       // getAttribute('w:id') is reliable; getAttributeNS is not for namespace-prefixed attrs
+      const pNodes = [
+        ...Array.from(el.getElementsByTagNameNS(ns, 'p')),
+        ...Array.from(el.getElementsByTagName('w:p')),
+      ];
+      const paraSeen = new Set<Node>();
+      const uniqueP = pNodes.filter(n => { if (paraSeen.has(n)) return false; paraSeen.add(n); return true; });
+
+      let matchedParaId: string | undefined;
+      let parentParaId: string | undefined;
+      for (const p of uniqueP) {
+        const paraId = p.getAttribute('w14:paraId') ?? p.getAttributeNS(nsW14, 'paraId') ?? '';
+        if (!paraId) continue;
+        if (!relationMap.has(paraId)) continue;
+        matchedParaId = paraId;
+        parentParaId = relationMap.get(paraId)?.parentId;
+        break;
+      }
+
       return {
         id    : el.getAttribute('w:id')     ?? el.getAttributeNS(ns, 'id')     ?? '',
         author: el.getAttribute('w:author') ?? el.getAttributeNS(ns, 'author') ?? 'Unknown',
         date  : el.getAttribute('w:date')   ?? el.getAttributeNS(ns, 'date')   ?? '',
         text,
+        paraId: matchedParaId,
+        parentParaId,
         colorIdx: 0,  // filled in by parseDocx after author assignment
       } as DocComment;
-    }).filter(c => c.text.length > 0);
+    }).filter(c => !!c.id);
+  }
+
+  private buildDocCommentThreads(comments: DocComment[]): DocCommentThread[] {
+    if (!comments.length) return [];
+
+    const byParaId = new Map<string, DocComment>();
+    for (const c of comments) {
+      if (c.paraId) byParaId.set(c.paraId, c);
+    }
+
+    const resolveRoot = (comment: DocComment): DocComment | undefined => {
+      if (!comment.parentParaId) return comment;
+      let current = comment.parentParaId;
+      const seen = new Set<string>();
+
+      while (current && !seen.has(current)) {
+        seen.add(current);
+        const parent = byParaId.get(current);
+        if (!parent) return undefined;
+        if (!parent.parentParaId) return parent;
+        current = parent.parentParaId;
+      }
+
+      return undefined;
+    };
+
+    const threads: DocCommentThread[] = [];
+    const threadByRootId = new Map<string, DocCommentThread>();
+
+    const ensureThread = (root: DocComment): DocCommentThread => {
+      const existing = threadByRootId.get(root.id);
+      if (existing) return existing;
+      const created: DocCommentThread = { root, replies: [] };
+      threadByRootId.set(root.id, created);
+      threads.push(created);
+      return created;
+    };
+
+    for (const c of comments) {
+      if (c.parentParaId) {
+        const root = resolveRoot(c);
+        if (root && root.id !== c.id) {
+          const thread = ensureThread(root);
+          thread.replies.push(c);
+          continue;
+        }
+      }
+      ensureThread(c);
+    }
+
+    return threads;
+  }
+
+  private flattenDocCommentThreads(threads: DocCommentThread[]): DocComment[] {
+    const flat: DocComment[] = [];
+    for (const thread of threads) {
+      flat.push(thread.root, ...thread.replies);
+    }
+    return flat;
   }
 
   // ── Type helpers ──────────────────────────────────────────────
@@ -675,62 +906,88 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       // Remove any existing active highlight
       document.querySelectorAll('.cmt-anchor.active-anchor')
         .forEach(el => el.classList.remove('active-anchor'));
+      document.querySelectorAll('.docx-cmt-hit')
+        .forEach(el => {
+          el.classList.remove(
+            'docx-cmt-hit',
+            'docx-cmt-hit-c0',
+            'docx-cmt-hit-c1',
+            'docx-cmt-hit-c2',
+            'docx-cmt-hit-c3',
+            'docx-cmt-hit-c4',
+            'docx-cmt-hit-c5',
+            'docx-cmt-hit-c6',
+            'docx-cmt-hit-c7',
+          );
+        });
 
       const anchor = document.getElementById('cmt-anchor-' + id);
-      if (!anchor) {
-        // In visual DOCX mode there are no injected mark anchors; fallback to text search.
-        const dc = this.docComments.find(c => c.id === id);
-        const target = this.findTextAnchor(dc?.anchoredText ?? '');
-        if (!target) return;
-
-        const container = this.docxContainer?.nativeElement?.closest('.doc-html-view') as HTMLElement | null;
-        if (container) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect    = target.getBoundingClientRect();
-          const offset = targetRect.top - containerRect.top + container.scrollTop
-                         - container.clientHeight / 2 + targetRect.height / 2;
-          container.scrollTo({ top: offset, behavior: 'smooth' });
-        } else {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
-      }
+      if (!anchor) return;
 
       anchor.classList.add('active-anchor');
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-      // The doc viewer is an overflow-y:auto flex child — scrollIntoView only
-      // works on the window, not sub-scroll containers. Manually compute offset.
-      const container = document.querySelector('.doc-html-view') as HTMLElement | null;
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        const anchorRect    = anchor.getBoundingClientRect();
-        const offset = anchorRect.top - containerRect.top + container.scrollTop
-                       - container.clientHeight / 2 + anchorRect.height / 2;
-        container.scrollTo({ top: offset, behavior: 'smooth' });
-      } else {
-        anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const colorIdx = this.docComments.find(c => c.id === id)?.colorIdx ?? 0;
+      const endAnchor = document.getElementById('cmt-anchor-end-' + id);
+
+      if (endAnchor) {
+        const hitCount = this.highlightRangeBetweenAnchors(anchor, endAnchor, colorIdx);
+        if (hitCount > 0) return;
       }
+
+      const target = this.findFirstTextElementAfterAnchor(anchor);
+      if (!target) return;
+      target.classList.add('docx-cmt-hit', `docx-cmt-hit-c${colorIdx}`);
     }, 50);
   }
 
-  private findTextAnchor(rawText: string): HTMLElement | null {
+  private highlightRangeBetweenAnchors(start: HTMLElement, end: HTMLElement, colorIdx: number): number {
     const container = this.docxContainer?.nativeElement;
-    if (!container || !rawText.trim()) return null;
-
-    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
-    const target = normalize(rawText);
-    const targetSnippet = target.length > 70 ? target.slice(0, 70) : target;
-    if (!targetSnippet) return null;
+    if (!container) return 0;
 
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const elements = new Set<HTMLElement>();
+    let node: Node | null = walker.nextNode();
+
+    while (node) {
+      const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim();
+      if (!text) {
+        node = walker.nextNode();
+        continue;
+      }
+
+      const afterStart = !!(start.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const beforeEnd = !!(node.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_FOLLOWING);
+      if (afterStart && beforeEnd) {
+        const el = node.parentElement as HTMLElement | null;
+        if (el) elements.add(el);
+      }
+
+      node = walker.nextNode();
+    }
+
+    for (const el of elements) {
+      el.classList.add('docx-cmt-hit', `docx-cmt-hit-c${colorIdx}`);
+    }
+    return elements.size;
+  }
+
+  private findFirstTextElementAfterAnchor(anchor: HTMLElement): HTMLElement | null {
+    const container = this.docxContainer?.nativeElement;
+    if (!container) return null;
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    walker.currentNode = anchor;
+
     let node: Node | null = walker.nextNode();
     while (node) {
-      const text = normalize(node.textContent ?? '');
-      if (text.includes(targetSnippet)) {
+      const text = (node.textContent ?? '').replace(/\s+/g, ' ').trim();
+      if (text) {
         return (node.parentElement as HTMLElement | null) ?? null;
       }
       node = walker.nextNode();
     }
+
     return null;
   }
 
@@ -745,20 +1002,19 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     replies: { dc: DocComment; idx: number }[];
   }[] {
     const threads: { root: DocComment; rootIdx: number; replies: { dc: DocComment; idx: number }[] }[] = [];
-    let current: typeof threads[0] | null = null;
-    let gi = 0;
-    for (const dc of this.docComments) {
-      if (dc.anchoredText !== undefined) {
-        current = { root: dc, rootIdx: gi, replies: [] };
-        threads.push(current);
-      } else if (current) {
-        current.replies.push({ dc, idx: gi });
-      } else {
-        current = { root: dc, rootIdx: gi, replies: [] };
-        threads.push(current);
-      }
-      gi++;
+    let globalIdx = 0;
+
+    for (const t of this.docCommentThreadsInternal) {
+      const rootIdx = globalIdx;
+      globalIdx += 1;
+      const replies = t.replies.map((dc) => {
+        const item = { dc, idx: globalIdx };
+        globalIdx += 1;
+        return item;
+      });
+      threads.push({ root: t.root, rootIdx, replies });
     }
+
     return threads;
   }
 
