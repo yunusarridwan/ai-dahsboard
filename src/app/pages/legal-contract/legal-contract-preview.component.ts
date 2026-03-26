@@ -952,6 +952,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     this.activeCommentId = null;
 
     setTimeout(() => {
+      this.clearDocCommentHighlights();
       this.clearAiPasalHighlights();
 
       const container = document.querySelector('.doc-html-view') as HTMLElement | null;
@@ -987,6 +988,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     this.activeCommentId = null;
 
     setTimeout(() => {
+      this.clearDocCommentHighlights();
       this.clearAiPasalHighlights();
 
       const container = document.querySelector('.doc-html-view') as HTMLElement | null;
@@ -1006,6 +1008,26 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   private clearAiPasalHighlights(): void {
     document.querySelectorAll('.ai-pasal-hit')
       .forEach(el => el.classList.remove('ai-pasal-hit'));
+  }
+
+  private clearDocCommentHighlights(): void {
+    document.querySelectorAll('.cmt-anchor.active-anchor')
+      .forEach(el => el.classList.remove('active-anchor'));
+
+    document.querySelectorAll('.docx-cmt-hit')
+      .forEach(el => {
+        el.classList.remove(
+          'docx-cmt-hit',
+          'docx-cmt-hit-c0',
+          'docx-cmt-hit-c1',
+          'docx-cmt-hit-c2',
+          'docx-cmt-hit-c3',
+          'docx-cmt-hit-c4',
+          'docx-cmt-hit-c5',
+          'docx-cmt-hit-c6',
+          'docx-cmt-hit-c7',
+        );
+      });
   }
 
   private extractPasalQueries(posisi: string): string[] {
@@ -1039,38 +1061,52 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     if (!q) return [];
     const isPasalQuery = /^pasal\s*\d+[a-z]?$/i.test(qRaw);
 
+    if (isPasalQuery) {
+      return this.findPasalHeadingElements(container, q);
+    }
+
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     const result = new Set<HTMLElement>();
     let node: Node | null = walker.nextNode();
     while (node) {
       const text = normalize(node.textContent ?? '');
       if (text.includes(q)) {
-        let host: HTMLElement | null = null;
-        if (isPasalQuery) {
-          host = this.findPasalHighlightHost(node.parentElement as HTMLElement | null, q);
-        } else {
-          host = this.findHighlightHost(node.parentElement as HTMLElement | null);
-        }
+        const host = this.findHighlightHost(node.parentElement as HTMLElement | null);
         if (host) result.add(host);
       }
       node = walker.nextNode();
     }
-
-    if (isPasalQuery && result.size) return Array.from(result);
     return Array.from(result);
   }
 
-  private findPasalHighlightHost(el: HTMLElement | null, normalizedQuery: string): HTMLElement | null {
+  private findPasalHeadingElements(container: HTMLElement, normalizedQuery: string): HTMLElement[] {
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
-    let cur: HTMLElement | null = el;
-    let depth = 0;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const result = new Set<HTMLElement>();
+    let node: Node | null = walker.nextNode();
 
-    while (cur && depth < 6) {
-      const txt = normalize(cur.textContent ?? '');
-      if (txt === normalizedQuery) return cur;
-      if (txt.includes(normalizedQuery) && txt.length <= normalizedQuery.length + 18) return cur;
+    while (node) {
+      const text = normalize(node.textContent ?? '');
+      if (text.includes(normalizedQuery)) {
+        const block = this.findNearestBlock(node.parentElement as HTMLElement | null);
+        if (block && normalize(block.textContent ?? '') === normalizedQuery) {
+          result.add(block);
+        }
+      }
+      node = walker.nextNode();
+    }
+
+    return Array.from(result);
+  }
+
+  private findNearestBlock(el: HTMLElement | null): HTMLElement | null {
+    let cur: HTMLElement | null = el;
+    while (cur) {
+      const tag = cur.tagName.toLowerCase();
+      if (['p', 'div', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'th'].includes(tag)) {
+        return cur;
+      }
       cur = cur.parentElement;
-      depth += 1;
     }
     return null;
   }
