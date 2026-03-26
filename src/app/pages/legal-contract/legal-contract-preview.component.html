@@ -218,14 +218,29 @@
         </div>
 
         <!-- Finding cards -->
-        <div *ngFor="let a of annotations; let i = index" class="finding-card">
+           <div *ngFor="let a of annotations; let i = index"
+             class="finding-card"
+             [class.finding-card-active]="activeFindingIdx === i"
+             (click)="scrollToAiFinding(a.Posisi, i)">
           <div class="finding-header">
             <span class="finding-num">{{ i + 1 }}</span>
             <span class="finding-topic">{{ a.Topik }}</span>
           </div>
-          <div class="finding-posisi" [style.color]="posisiColor(a.Posisi)"
-               [style.background]="posisiBg(a.Posisi)">
+          <div *ngIf="!getPasalList(a.Posisi).length"
+            class="finding-posisi"
+            [style.color]="posisiColor(a.Posisi)"
+            [style.background]="posisiBg(a.Posisi)">
             {{ a.Posisi }}
+          </div>
+          <div *ngIf="getPasalList(a.Posisi).length" class="finding-pasal-list">
+            <button
+              *ngFor="let p of getPasalList(a.Posisi)"
+              type="button"
+              class="finding-pasal-chip"
+              [class.finding-pasal-chip-active]="isActiveFindingPasal(i, p)"
+              (click)="scrollToAiFindingPasal(p, i, $event)">
+              {{ p }}
+            </button>
           </div>
           <p class="finding-desc" *ngIf="a.deskripsi">{{ a.deskripsi }}</p>
         </div>
@@ -328,7 +343,6 @@
             Sorted by time &mdash; oldest first
           </div>
 
-          <!-- Empty state -->
           <div *ngIf="!sortedApprovalLog.length" class="panel-empty" style="padding:24px 0">
             <svg width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>

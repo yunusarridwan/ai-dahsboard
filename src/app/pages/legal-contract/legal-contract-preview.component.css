@@ -289,9 +289,15 @@
   border: 1px solid #e2e8f0;
   background: #fff;
   margin-bottom: 8px;
-  transition: box-shadow .15s;
+  transition: box-shadow .15s, border-color .15s, background .15s;
+  cursor: pointer;
 }
 .finding-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.finding-card.finding-card-active {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.22);
+}
 
 .finding-header {
   display: flex;
@@ -331,6 +337,37 @@
   color: #64748b;
   line-height: 1.5;
   margin: 0;
+}
+
+.finding-pasal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.finding-pasal-chip {
+  border: 1px solid #fcd34d;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+}
+
+.finding-pasal-chip:hover {
+  background: #fde68a;
+  border-color: #f59e0b;
+}
+
+.finding-pasal-chip.finding-pasal-chip-active {
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(217, 119, 6, .35);
 }
 
 /* ── Comments tab ─────────────────────────────────────────────── */
@@ -726,6 +763,15 @@
 @keyframes cmtPulse {
   0%   { box-shadow: 0 0 0 0 rgba(79, 70, 229, .25); }
   100% { box-shadow: 0 0 0 2px rgba(15, 23, 42, .12); }
+}
+
+/* Pasal jump target highlight from AI Findings tab */
+:host ::ng-deep .doc-html-view .ai-pasal-hit,
+:host ::ng-deep .docx .ai-pasal-hit {
+  background: #fff34a !important;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+  transition: box-shadow .2s;
 }
 
 /* ── Docx HTML viewer ─────────────────────────────────────────── */

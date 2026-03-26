@@ -88,6 +88,8 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   // right panel tab
   activeTab: 'annotations' | 'comments' | 'docComments' = 'annotations';
   activeCommentId: string | null = null;  // id of the currently highlighted comment
+  activeFindingIdx: number | null = null;
+  activeFindingPasal: string | null = null;
 
   newComment = '';
 
@@ -158,6 +160,8 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     this.docComments  = [];
     this.commentAnchorDomIdMap.clear();
     this.docxBufferWithBookmarks = null;
+    this.activeFindingIdx = null;
+    this.activeFindingPasal = null;
     this.docLoadError = '';
     this.isLocalCopy  = false;
     this.docxRendered = false;
@@ -903,6 +907,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
   scrollToComment(id: string): void {
     this.activeCommentId = id;
     setTimeout(() => {
+      this.clearAiPasalHighlights();
       // Remove any existing active highlight
       document.querySelectorAll('.cmt-anchor.active-anchor')
         .forEach(el => el.classList.remove('active-anchor'));
@@ -939,6 +944,148 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
       if (!target) return;
       target.classList.add('docx-cmt-hit', `docx-cmt-hit-c${colorIdx}`);
     }, 50);
+  }
+
+  scrollToAiFinding(posisi: string, idx: number): void {
+    this.activeFindingIdx = idx;
+    this.activeFindingPasal = null;
+    this.activeCommentId = null;
+
+    setTimeout(() => {
+      this.clearAiPasalHighlights();
+
+      const container = document.querySelector('.doc-html-view') as HTMLElement | null;
+      if (!container) return;
+
+      const queries = this.extractPasalQueries(posisi);
+      const allTargets = new Set<HTMLElement>();
+      let firstTarget: HTMLElement | null = null;
+
+      for (const q of queries) {
+        const targets = this.findTextElementsByQuery(container, q);
+        for (const t of targets) {
+          allTargets.add(t);
+          if (!firstTarget) firstTarget = t;
+        }
+      }
+      if (!allTargets.size) return;
+
+      for (const t of allTargets) {
+        t.classList.add('ai-pasal-hit');
+      }
+
+      if (firstTarget) {
+        firstTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+  }
+
+  scrollToAiFindingPasal(pasal: string, idx: number, event?: Event): void {
+    event?.stopPropagation();
+    this.activeFindingIdx = idx;
+    this.activeFindingPasal = pasal;
+    this.activeCommentId = null;
+
+    setTimeout(() => {
+      this.clearAiPasalHighlights();
+
+      const container = document.querySelector('.doc-html-view') as HTMLElement | null;
+      if (!container) return;
+
+      const targets = this.findTextElementsByQuery(container, pasal);
+      if (!targets.length) return;
+
+      for (const t of targets) {
+        t.classList.add('ai-pasal-hit');
+      }
+
+      targets[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  }
+
+  private clearAiPasalHighlights(): void {
+    document.querySelectorAll('.ai-pasal-hit')
+      .forEach(el => el.classList.remove('ai-pasal-hit'));
+  }
+
+  private extractPasalQueries(posisi: string): string[] {
+    const raw = (posisi ?? '').trim();
+    if (!raw) return [];
+
+    const list: string[] = [];
+    const pasalMatches = raw.match(/pasal\s*\d+[a-z]?/gi) ?? [];
+    for (const m of pasalMatches) {
+      const item = m.replace(/\s+/g, ' ').trim();
+      if (item && !list.includes(item)) list.push(item);
+    }
+    if (raw && !list.includes(raw)) list.push(raw);
+    return list;
+  }
+
+  getPasalList(posisi: string): string[] {
+    return this.extractPasalQueries(posisi)
+      .filter(q => /^pasal\s*\d+[a-z]?$/i.test(q));
+  }
+
+  isActiveFindingPasal(idx: number, pasal: string): boolean {
+    return this.activeFindingIdx === idx
+      && (this.activeFindingPasal ?? '').toLowerCase() === pasal.toLowerCase();
+  }
+
+  private findTextElementsByQuery(container: HTMLElement, query: string): HTMLElement[] {
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const qRaw = (query ?? '').trim();
+    const q = normalize(qRaw);
+    if (!q) return [];
+    const isPasalQuery = /^pasal\s*\d+[a-z]?$/i.test(qRaw);
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    const result = new Set<HTMLElement>();
+    let node: Node | null = walker.nextNode();
+    while (node) {
+      const text = normalize(node.textContent ?? '');
+      if (text.includes(q)) {
+        let host: HTMLElement | null = null;
+        if (isPasalQuery) {
+          host = this.findPasalHighlightHost(node.parentElement as HTMLElement | null, q);
+        } else {
+          host = this.findHighlightHost(node.parentElement as HTMLElement | null);
+        }
+        if (host) result.add(host);
+      }
+      node = walker.nextNode();
+    }
+
+    if (isPasalQuery && result.size) return Array.from(result);
+    return Array.from(result);
+  }
+
+  private findPasalHighlightHost(el: HTMLElement | null, normalizedQuery: string): HTMLElement | null {
+    const normalize = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+    let cur: HTMLElement | null = el;
+    let depth = 0;
+
+    while (cur && depth < 6) {
+      const txt = normalize(cur.textContent ?? '');
+      if (txt === normalizedQuery) return cur;
+      if (txt.includes(normalizedQuery) && txt.length <= normalizedQuery.length + 18) return cur;
+      cur = cur.parentElement;
+      depth += 1;
+    }
+    return null;
+  }
+
+  private findHighlightHost(el: HTMLElement | null): HTMLElement | null {
+    if (!el) return null;
+    let cur: HTMLElement | null = el;
+    while (cur) {
+      const tag = cur.tagName.toLowerCase();
+      if (['span', 'strong', 'em', 'b', 'i'].includes(tag)) {
+        return cur;
+      }
+      cur = cur.parentElement;
+    }
+    return el;
   }
 
   private highlightRangeBetweenAnchors(start: HTMLElement, end: HTMLElement, colorIdx: number): number {
