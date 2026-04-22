@@ -35,7 +35,7 @@ export class LoginComponent {
     // Simulate async delay for UX polish
     await new Promise(r => setTimeout(r, 600));
 
-    const success = this.auth.login(this.username, this.password);
+    const success = await this.auth.login(this.username, this.password);
     this.loading.set(false);
 
     if (success) {

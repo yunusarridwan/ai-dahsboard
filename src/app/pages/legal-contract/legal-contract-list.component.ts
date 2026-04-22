@@ -170,6 +170,15 @@ export class LegalContractListComponent implements OnInit {
 
   ngOnInit(): void { this.loadContracts(); }
 
+  private sortContractsByDate(items: LegalContract[]): LegalContract[] {
+    return [...items].sort((a, b) => this.getCreatedAtTimestamp(b.createdAt) - this.getCreatedAtTimestamp(a.createdAt));
+  }
+
+  private getCreatedAtTimestamp(value: string): number {
+    const ts = Date.parse(value);
+    return Number.isNaN(ts) ? 0 : ts;
+  }
+
   loadContracts(pageNumber = this.currentPage): void {
     this.isLoading = true;
     this.loadError = '';
@@ -181,7 +190,7 @@ export class LegalContractListComponent implements OnInit {
     });
 
     this.http.get(url, { responseType: 'text', headers }).subscribe({
-      next: (raw) => {
+      next: (raw: string) => {
         const parsed = this.parseListResponse(raw);
         if (!parsed) {
           this.contracts = [];
@@ -206,15 +215,12 @@ export class LegalContractListComponent implements OnInit {
         this.currentPage = Number(res?.pageNumber) || safePage;
         this.totalRecords = Number(res?.totalRecords) || 0;
         this.serverTotalPages = Math.max(1, Number(res?.totalPages) || 1);
-        this.contracts = items
-          .map((item) => this.mapApiItemToContract(item))
-          // Sort by createdAt descending so newest contracts appear first.
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        this.contracts = this.sortContractsByDate(items.map((item) => this.mapApiItemToContract(item)));
         this.syncContractsToLocalStorage(this.contracts);
         this.applyFilter();
         this.isLoading = false;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.contracts = [];
         this.filtered = [];
         this.totalRecords = 0;
@@ -299,19 +305,20 @@ export class LegalContractListComponent implements OnInit {
         const prev = map.get(c.contractId);
         map.set(c.contractId, prev ? { ...prev, ...c } : c);
       }
-      localStorage.setItem(LEGAL_CONTRACT_LS_KEY, JSON.stringify(Array.from(map.values())));
+      localStorage.setItem(LEGAL_CONTRACT_LS_KEY, JSON.stringify(this.sortContractsByDate(Array.from(map.values()))));
     } catch {}
   }
 
   applyFilter(): void {
     const q = this.searchQuery.toLowerCase().trim();
-    this.filtered = !q ? [...this.contracts] : this.contracts.filter(c =>
+    const results = !q ? [...this.contracts] : this.contracts.filter(c =>
       c.judulKontrak.toLowerCase().includes(q) ||
       c.customer.toLowerCase().includes(q) ||
       c.projectCode.toLowerCase().includes(q) ||
       c.contractId.toLowerCase().includes(q) ||
       c.tipeRequest.toLowerCase().includes(q)
     );
+    this.filtered = this.sortContractsByDate(results);
   }
 
   onPageSizeChange(): void {}

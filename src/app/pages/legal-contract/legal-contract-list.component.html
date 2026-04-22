@@ -110,6 +110,7 @@
             <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">PIC Kontrak 1</th>
             <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">SPV/Other Member</th>
             <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Status</th>
+            <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Created Date</th>
             <th class="px-4 py-3 font-bold text-[#1F2937] whitespace-nowrap">Action</th>
           </tr>
         </thead>
@@ -130,6 +131,7 @@
             <td class="px-4 py-3 whitespace-nowrap">
               <span [class]="'status-badge ' + statusClass(c.status)">{{ c.status }}</span>
             </td>
+            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">{{ c.createdAt | date:'dd MMM yyyy, HH:mm' }}</td>
             <td class="px-4 py-3 whitespace-nowrap">
               <div class="flex items-center gap-2">
                 <button (click)="viewPreview(c)"
@@ -152,7 +154,7 @@
 
           <!-- Empty state -->
           <tr *ngIf="pagedItems.length === 0">
-            <td colspan="9" class="px-4 py-16 text-center">
+            <td colspan="10" class="px-4 py-16 text-center">
               <div class="flex flex-col items-center gap-3">
                 <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
                   <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">

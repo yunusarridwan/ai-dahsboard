@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export type UserRole = 'user' | 'reviewer';
@@ -9,17 +9,16 @@ export interface AuthUser {
   role: UserRole;
 }
 
-interface DummyUser {
-  username: string;
+interface DummyUser extends AuthUser {
   password: string;
-  name: string;
-  role: UserRole;
 }
 
 const DUMMY_USERS: DummyUser[] = [
-  { username: 'user',     password: 'user123',     name: 'John User',     role: 'user'     },
+  { username: 'user', password: 'user123', name: 'John User', role: 'user' },
   { username: 'reviewer', password: 'reviewer123', name: 'Jane Reviewer', role: 'reviewer' },
 ];
+
+
 
 const STORAGE_KEY = 'ai_dashboard_user';
 
@@ -33,15 +32,19 @@ export class AuthService {
 
   constructor(private router: Router) {}
 
-  login(username: string, password: string): boolean {
-    const match = DUMMY_USERS.find(
-      u => u.username === username.trim() && u.password === password
+  async login(username: string, password: string): Promise<boolean> {
+    const normalizedUsername = username.trim();
+    const user = DUMMY_USERS.find(
+      (u) => u.username === normalizedUsername && u.password === password
     );
-    if (!match) return false;
 
-    const user: AuthUser = { username: match.username, name: match.name, role: match.role };
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    this._currentUser.set(user);
+    if (!user) {
+      return false;
+    }
+
+    const { password: _ignored, ...authUser } = user;
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+    this._currentUser.set(authUser);
     return true;
   }
 

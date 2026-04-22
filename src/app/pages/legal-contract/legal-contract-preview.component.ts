@@ -124,7 +124,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     const headers = this.apiHeaders();
 
     this.http.get(`${this.GET_BY_ID_URL}?id=${encodeURIComponent(this.contractId)}`, { responseType: 'text', headers }).subscribe({
-      next: (raw) => {
+      next: (raw: string) => {
         const apiItem = this.parseGetByIdResponse(raw);
         if (!apiItem) {
           this.loadContractFromLocal();
@@ -172,7 +172,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
 
     this.isLoadingDoc = true;
     this.http.get(url, { responseType: 'arraybuffer', headers }).subscribe({
-      next: async (buf) => {
+      next: async (buf: ArrayBuffer) => {
         if (this.isPdf(f.name)) {
           const blob = new Blob([buf], { type: 'application/pdf' });
           this.localObjectUrl = URL.createObjectURL(blob);
@@ -1334,7 +1334,7 @@ export class LegalContractPreviewComponent implements OnInit, OnDestroy {
     const headers = this.apiHeaders();
 
     this.http.get(url, { responseType: 'blob', headers }).subscribe({
-      next: (blob) => {
+      next: (blob: Blob) => {
         const objectUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = objectUrl;

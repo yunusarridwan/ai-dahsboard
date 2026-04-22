@@ -305,7 +305,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
     formData.append('file', file);   // ← ONLY the document is sent to the API
 
     this.http.post<VerifyResponse | string>(this.VERIFY_URL, formData, { responseType: 'json' as const }).subscribe({
-      next: (res) => {
+      next: (res: VerifyResponse | string) => {
         const payload = this.toObjectPayload(res);
         const directModel = this.directModel(payload);
 
@@ -357,9 +357,9 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
           ? `Verified (${pct}%)`
           : `Verified (no mapped fields from response, ${pct}%)`;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         staged.status = 'error';
-        staged.note   = `Verify failed: ${err?.message ?? 'unknown error'}`;
+        staged.note   = `Verify failed: ${err instanceof Error ? err.message : 'unknown error'}`;
       },
     });
   }
@@ -559,7 +559,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
     this.submitProgress = 'Saving contract to API...';
 
     this.http.post(this.SAVE_URL, payload).subscribe({
-      next: (res) => {
+      next: (res: unknown) => {
         log.push({
           timestamp: new Date().toISOString(),
           step: 'save-api',
@@ -576,7 +576,7 @@ export class LegalContractFormComponent implements OnInit, OnDestroy {
         this.lastSubmitLog = log;
         this.persistContract(allFiles, log);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         log.push({
           timestamp: new Date().toISOString(),
           step: 'save-api',

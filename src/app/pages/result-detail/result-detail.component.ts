@@ -136,7 +136,7 @@ export class ResultDetailComponent implements OnInit {
         this.currentPage  = res.pageNumber;
         this.isLoading    = false;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         console.error('[WOD] getby-percentage error:', err);
         this.isLoading = false;
         this.hasError  = true;
