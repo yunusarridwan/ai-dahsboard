@@ -38,6 +38,7 @@ export class SidebarComponent {
         { label: 'AI for document validation',    route: '/dashboard',             icon: 'validation', iconImg: 'assets/Icon/file-attachment-black.png' },
         { label: 'AI for document comparison',    route: '/comparison',            icon: 'comparison', iconImg: 'assets/Icon/columns-01.png'            },
         { label: 'AI Contract Verification',      route: '/contract-verification', icon: 'contract',   iconImg: 'assets/Icon/check-circle-broken.png'   },
+        { label: 'AI Ops',                        route: '/ai-ops',                icon: 'legal',      iconImg: 'assets/Icon/file-attachment-black.png' },
         { label: 'Legal Contract',                route: '/legal-contract',        icon: 'legal',      iconImg: 'assets/Icon/file-attachment-black.png' },
       ]
     },

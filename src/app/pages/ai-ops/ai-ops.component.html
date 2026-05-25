@@ -1,238 +1,275 @@
-<div class="bg-[#F8FAFC] min-h-screen">
-<div class="flex flex-col md:flex-row gap-0 min-h-screen">
+<div class="bg-[#F8FAFC] min-h-screen flex flex-col">
 
-  <!-- ══════════════ LEFT PANEL ══════════════ -->
-  <div class="w-full md:w-[220px] shrink-0 bg-gradient-to-br from-violet-700 via-indigo-700 to-blue-700 flex flex-row md:flex-col p-4 md:p-6 relative overflow-hidden items-center md:items-start gap-4 md:gap-0">
-    <!-- Decorative blobs -->
-    <div class="absolute top-[-30px] left-[-30px] w-40 h-40 rounded-full bg-violet-500/40 blur-2xl pointer-events-none"></div>
-    <div class="absolute bottom-[100px] right-[-20px] w-32 h-32 rounded-full bg-blue-400/30 blur-2xl pointer-events-none"></div>
-
-    <div class="z-10">
-      <h2 class="text-white text-[18px] md:text-[22px] font-extrabold leading-tight">AI Ops</h2>
-      <p class="text-white/60 text-[9px] font-bold tracking-[0.12em] uppercase mt-1 z-10">System Health &amp;<br class="hidden md:block">Resource Monitoring</p>
+  <!-- ══════════════════════════════════════════════════
+       TOP HEADER BAR
+  ══════════════════════════════════════════════════ -->
+  <header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between flex-wrap gap-3 shrink-0">
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Title -->
+      <span class="flex items-center gap-2 text-[17px] font-bold text-[#1F2937]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        AI Ops monitoring
+      </span>
+      <!-- Production badge -->
+      <span class="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        Production
+      </span>
+      <!-- Live pill -->
+      <span class="flex items-center gap-1.5 text-[12px] text-slate-500 border border-slate-200 rounded-full px-3 py-1">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Live · refresh 30s
+      </span>
     </div>
-
-    <!-- Clock -->
-    <div class="md:mt-6 text-white text-[16px] md:text-[20px] font-bold tracking-wide z-10">{{ currentTime }}</div>
-
-    <!-- Robot illustration (hidden on mobile) -->
-    <div class="mt-auto hidden md:flex justify-center z-10">
-      <svg width="160" height="170" viewBox="0 0 160 170" fill="none">
-        <!-- Glow base -->
-        <ellipse cx="80" cy="158" rx="50" ry="8" fill="rgba(255,255,255,0.1)"/>
-        <!-- Body -->
-        <rect x="38" y="82" width="84" height="62" rx="14" fill="white" opacity="0.92"/>
-        <!-- Head -->
-        <rect x="50" y="46" width="60" height="42" rx="12" fill="white" opacity="0.96"/>
-        <!-- Eyes -->
-        <circle cx="68" cy="65" r="7" fill="#2563EB"/>
-        <circle cx="92" cy="65" r="7" fill="#2563EB"/>
-        <circle cx="70" cy="63" r="3" fill="white"/>
-        <circle cx="94" cy="63" r="3" fill="white"/>
-        <!-- Antenna -->
-        <line x1="80" y1="46" x2="80" y2="30" stroke="white" stroke-width="3" stroke-linecap="round"/>
-        <circle cx="80" cy="26" r="5" fill="#EC861D"/>
-        <!-- Neck -->
-        <rect x="72" y="86" width="16" height="6" rx="3" fill="#E2E8F0"/>
-        <!-- Left arm -->
-        <rect x="10" y="90" width="30" height="14" rx="7" fill="white" opacity="0.8"/>
-        <!-- Right arm (holding laptop) -->
-        <rect x="120" y="90" width="30" height="14" rx="7" fill="white" opacity="0.8"/>
-        <!-- Chest panel -->
-        <rect x="56" y="98" width="48" height="30" rx="8" fill="#2563EB" opacity="0.55"/>
-        <circle cx="68" cy="113" r="4" fill="#EC861D"/>
-        <circle cx="80" cy="113" r="4" fill="#10B981"/>
-        <circle cx="92" cy="113" r="4" fill="#EF4444"/>
-        <!-- Legs -->
-        <rect x="56" y="142" width="20" height="18" rx="7" fill="white" opacity="0.8"/>
-        <rect x="84" y="142" width="20" height="18" rx="7" fill="white" opacity="0.8"/>
-        <!-- Laptop (right side) -->
-        <rect x="118" y="70" width="34" height="24" rx="4" fill="white" opacity="0.85"/>
-        <rect x="121" y="73" width="28" height="17" rx="2" fill="#1E3A8A" opacity="0.7"/>
-        <line x1="124" y1="77" x2="145" y2="77" stroke="#60A5FA" stroke-width="1.5"/>
-        <line x1="124" y1="81" x2="140" y2="81" stroke="#93C5FD" stroke-width="1"/>
-        <line x1="124" y1="85" x2="143" y2="85" stroke="#93C5FD" stroke-width="1"/>
-      </svg>
+    <div class="flex items-center gap-3">
+      <span class="text-[12px] text-slate-400">Last sync: {{ lastSync }}</span>
+      <button class="flex items-center gap-2 bg-[#1F2937] text-white text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+        🤖 Ask AI
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+      </button>
     </div>
-  </div>
+  </header>
 
-  <!-- ══════════════ RIGHT CONTENT ══════════════ -->
-  <div class="flex-1 flex flex-col gap-5 p-4 md:p-6 bg-[#F8FAFC] overflow-y-auto">
+  <div class="flex-1 p-5 flex flex-col gap-5 overflow-y-auto">
 
-    <!-- ─── Network Monitoring ─── -->
-    <div>
-      <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-[0.1em] mb-2">Network Monitoring</p>
-      <div class="bg-[#1F2937] rounded-xl px-5 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.5">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-[11px] text-gray-400 font-semibold mb-0.5">ICMP Status</p>
-            <p class="text-white text-[17px] font-bold">{{ icmpStatus }}</p>
-          </div>
+    <!-- ══════════════════════════════════════════════════
+         STAT CARDS ROW
+    ══════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div *ngFor="let card of statCards"
+           class="bg-white rounded-xl border border-slate-100 shadow-sm px-5 py-4">
+        <div class="flex items-center gap-2 mb-1">
+          <p class="text-[12px] text-slate-500 font-medium">{{ card.label }}</p>
         </div>
-        <div class="text-right shrink-0">
-          <p class="text-[11px] text-gray-400 mb-0.5">Average Latency</p>
-          <p class="text-white text-[22px] font-extrabold leading-none">{{ avgLatency }}</p>
-          <p class="text-green-400 text-[12px] font-semibold mt-1">
-            <span>↗</span> {{ latencyDelta }}
-          </p>
-        </div>
+        <p class="text-[30px] font-extrabold leading-none mb-1"
+           [ngClass]="card.valueClass ?? 'text-green-500'">{{ card.value }}</p>
+        <p class="text-[12px]" [ngClass]="card.subClass">{{ card.sub }}</p>
       </div>
     </div>
 
-    <!-- ─── Host Health ─── -->
-    <div>
-      <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-[0.1em] mb-2">Host Health</p>
-      <div class="flex flex-wrap items-stretch gap-3">
+    <!-- ══════════════════════════════════════════════════
+         RESPONSE TIME CHART  +  SERVICE HEALTH
+    ══════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
 
-        <!-- Summary -->
-        <div class="flex-1 bg-white rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm border border-slate-100">
-          <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center shrink-0">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.5">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-[17px] font-extrabold text-[#1F2937]">{{ unhealthyHosts }} of {{ totalHosts }} Hosts Unhealthy</p>
-            <p class="text-[11px] text-[#64748B]">immediate attention required</p>
-          </div>
+      <!-- Response Time SVG Chart -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-[13px] font-semibold text-slate-700">📈 Response time (ms) · last 60 min</span>
+          <span class="text-[11px] text-slate-400 font-medium">p95</span>
         </div>
 
-        <!-- Total Hosts -->
-        <div class="flex-1 min-w-[140px] bg-blue-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
-          <div>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            <p class="text-[11px] font-semibold mt-2 text-white/80">Total Hosts</p>
-          </div>
-          <p class="text-[36px] font-extrabold leading-none">{{ totalHosts }}</p>
-        </div>
-
-        <!-- Healthy -->
-        <div class="flex-1 min-w-[140px] bg-green-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
-          <div>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="9 12 11 14 15 10"/>
-            </svg>
-            <p class="text-[11px] font-semibold mt-2 text-white/80">Healthy</p>
-          </div>
-          <p class="text-[36px] font-extrabold leading-none">{{ healthyHosts }}</p>
-        </div>
-
-        <!-- Unhealthy -->
-        <div class="flex-1 min-w-[140px] bg-red-500 rounded-xl px-5 py-4 flex items-center justify-between text-white shadow-sm">
-          <div>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-            <p class="text-[11px] font-semibold mt-2 text-white/80">Unhealthy</p>
-          </div>
-          <p class="text-[36px] font-extrabold leading-none">{{ unhealthyHosts }}</p>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ─── Server Cards ─── -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div
-        *ngFor="let s of servers"
-        class="bg-white rounded-xl border-2 shadow-sm flex flex-col gap-3 p-4"
-        [ngClass]="statusBorderClass(s)"
-      >
-
-        <!-- Card header -->
-        <div class="flex items-center justify-between">
-          <p class="text-[13px] font-bold text-[#1F2937]">{{ s.name }}</p>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" [ngClass]="statusBadgeClass(s)">
-            {{ s.status }}
+        <!-- Legend -->
+        <div class="flex gap-4 mb-3">
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500">
+            <span class="inline-block w-5 h-0.5 bg-red-400"></span> p95
+          </span>
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500">
+            <span class="inline-block w-5 h-0.5 bg-yellow-400"></span> p50
+          </span>
+          <span class="flex items-center gap-1.5 text-[11px] text-slate-500">
+            <span class="inline-block w-5 h-0.5 bg-blue-300"></span> p5
           </span>
         </div>
 
-        <!-- Usage bars -->
-        <div class="flex flex-col gap-2">
-          <ng-container *ngFor="let metric of getMetrics(s)">
-            <div>
-              <div class="flex justify-between text-[11px] mb-1">
-                <span class="text-[#64748B]">{{ metric.label }}</span>
-                <span class="font-semibold text-[#1F2937]">{{ metric.value }}%</span>
-              </div>
-              <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div class="h-full rounded-full" [ngClass]="barColor(metric.value)" [style.width.%]="metric.value"></div>
-              </div>
+        <svg [attr.viewBox]="'0 0 ' + chartW + ' ' + chartH"
+             class="w-full" style="height:180px; overflow:visible">
+          <!-- Y-axis grid lines -->
+          <line *ngFor="let pct of [0, 25, 50, 75, 100]"
+                x1="0" [attr.x2]="chartW"
+                [attr.y1]="chartH - (pct / 100) * chartH"
+                [attr.y2]="chartH - (pct / 100) * chartH"
+                stroke="#f1f5f9" stroke-width="1"/>
+          <!-- Y labels -->
+          <text *ngFor="let pct of [0, 25, 50, 75, 100]"
+                x="-6"
+                [attr.y]="chartH - (pct / 100) * chartH + 4"
+                text-anchor="end" font-size="9" fill="#94a3b8">
+            {{ (pct / 100 * chartMaxY) | number:'1.0-0' }}ms
+          </text>
+          <!-- Filled area under p95 -->
+          <polygon
+            [attr.points]="chartPoints('p95') + ' ' + chartW + ',' + chartH + ' 0,' + chartH"
+            fill="#ef4444" opacity="0.07"/>
+          <!-- p95 line -->
+          <polyline [attr.points]="chartPoints('p95')"
+                    fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"/>
+          <!-- p50 line -->
+          <polyline [attr.points]="chartPoints('p50')"
+                    fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- p5 line -->
+          <polyline [attr.points]="chartPoints('p5')"
+                    fill="none" stroke="#93c5fd" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- X labels -->
+          <text *ngFor="let lbl of chartXLabels()"
+                [attr.x]="lbl.x" [attr.y]="chartH + 16"
+                text-anchor="middle" font-size="9" fill="#94a3b8">
+            {{ lbl.label }}
+          </text>
+        </svg>
+      </div>
+
+      <!-- Service Health -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <p class="text-[13px] font-semibold text-slate-700 mb-4">🖥 Service health</p>
+        <div class="flex flex-col gap-3">
+          <div *ngFor="let svc of services" class="flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full shrink-0" [ngClass]="serviceDotColor(svc.dot)"></span>
+            <span class="text-[12px] text-slate-700 w-[130px] shrink-0 truncate">{{ svc.name }}</span>
+            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500"
+                   [ngClass]="serviceBarColor(svc.dot)"
+                   [style.width.%]="svc.cpu"></div>
             </div>
-          </ng-container>
+            <span class="text-[11px] font-semibold text-slate-700 w-[56px] text-right shrink-0">{{ svc.cpu }}% CPU</span>
+          </div>
         </div>
+      </div>
 
-        <!-- AI Recommendation button -->
-        <button
-          *ngIf="hasAiRecommendation(s)"
-          class="w-full flex items-center justify-center gap-1.5 border rounded-full py-1.5 text-[11px] font-semibold transition-colors"
-          [ngClass]="aiRecommendationClass(s)"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L9.19 8.63L2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/>
-          </svg>
-          AI Recommendation
-        </button>
+    </div>
 
-        <!-- Top Resource CPU -->
-        <div class="bg-slate-50 rounded-lg p-3">
-          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource CPU</p>
-          <div *ngFor="let p of s.topCpu" class="mb-1.5 last:mb-0">
-            <div class="flex justify-between text-[10px] mb-0.5">
-              <span class="text-[#64748B]">{{ p.name }}</span>
-              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
+    <!-- ══════════════════════════════════════════════════
+         ERROR RATE CHART  +  ACTIVE ALERTS
+    ══════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+
+      <!-- Error Rate Bar Chart -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-[13px] font-semibold text-slate-700">⚠ Error rate (%) · last 60 min</span>
+          <span class="text-[11px] text-slate-400">per service</span>
+        </div>
+        <!-- Y-axis labels + bars -->
+        <div class="relative h-[140px] flex items-end gap-4 pl-8">
+          <!-- Y gridlines -->
+          <div class="absolute inset-0 left-8 flex flex-col justify-between pointer-events-none">
+            <div *ngFor="let pct of [6, 4, 2, 0]" class="flex items-center">
+              <span class="text-[9px] text-slate-400 -translate-x-8 w-7 text-right shrink-0">{{ pct }}%</span>
+              <div class="flex-1 h-px bg-slate-100 ml-2"></div>
             </div>
-            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
+          </div>
+          <!-- Bars -->
+          <div class="flex-1 flex items-end justify-around h-full pl-2">
+            <div *ngFor="let er of errorRateData" class="flex flex-col items-center gap-1.5 flex-1">
+              <div class="w-full max-w-[36px] rounded-t-md transition-all duration-500"
+                   [style.background]="er.color"
+                   [style.height]="errorBarHeight(er.rate) + '%'"></div>
+              <span class="text-[10px] text-slate-400 truncate max-w-[48px] text-center">{{ er.service }}</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Top Resource RAM -->
-        <div class="bg-slate-50 rounded-lg p-3">
-          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource RAM</p>
-          <div *ngFor="let p of s.topRam" class="mb-1.5 last:mb-0">
-            <div class="flex justify-between text-[10px] mb-0.5">
-              <span class="text-[#64748B]">{{ p.name }}</span>
-              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
+      <!-- Active Alerts -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-[13px] font-semibold text-slate-700">🔔 Active alerts</span>
+          <a href="#" class="text-[12px] text-blue-500 hover:underline">Lihat semua ↗</a>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div *ngFor="let alert of alerts" class="flex items-start gap-2.5">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 mt-0.5"
+                  [ngClass]="alertLevelClass(alert.level)">{{ alert.level }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[12px] font-semibold text-slate-800 leading-snug">{{ alert.title }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ alert.desc }}</p>
             </div>
-            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
-            </div>
+            <span class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">{{ alert.time }}</span>
           </div>
         </div>
+      </div>
 
-        <!-- Top Resource Storage -->
-        <div class="bg-slate-50 rounded-lg p-3">
-          <p class="text-[10px] font-bold text-[#1F2937] mb-2">Top Resource Storage</p>
-          <div *ngFor="let p of s.topStorage" class="mb-1.5 last:mb-0">
-            <div class="flex justify-between text-[10px] mb-0.5">
-              <span class="text-[#64748B]">{{ p.name }}</span>
-              <span class="font-semibold text-[#1F2937]">{{ p.value }}%</span>
-            </div>
-            <div class="h-1 bg-slate-200 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" [ngClass]="barColor(p.value)" [style.width.%]="p.value"></div>
-            </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         LIVE LOG STREAM
+    ══════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+          <span class="text-[13px] font-semibold text-slate-700">⌨ Live log stream</span>
+          <div class="flex gap-2">
+            <button *ngFor="let f of logFilters"
+                    (click)="setLogFilter(f)"
+                    class="text-[12px] font-semibold px-3 py-1 rounded-full border transition-colors"
+                    [ngClass]="activeLogFilter === f
+                      ? 'border-blue-400 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 text-slate-500 hover:border-slate-300'">
+              {{ f }}
+            </button>
           </div>
         </div>
+        <span class="text-[12px] text-slate-400">4 hosts · 3 apps</span>
+      </div>
 
+      <div class="font-mono text-[11px] flex flex-col divide-y divide-slate-50">
+        <div *ngFor="let log of filteredLogs"
+             class="grid grid-cols-[64px_52px_140px_1fr] gap-x-3 py-1.5 items-baseline">
+          <span class="text-slate-400">{{ log.time }}</span>
+          <span class="font-bold" [ngClass]="logLevelClass(log.level)">{{ log.level }}</span>
+          <span class="text-slate-500 font-medium truncate">{{ log.service }}</span>
+          <span class="text-slate-700 break-all">{{ log.msg }}</span>
+        </div>
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════
+         TICKETING  +  AI PLAYBOOK
+    ══════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- Ticketing -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-[13px] font-semibold text-slate-700">⬡ Ticketing — open incidents</span>
+          <a href="#" class="text-[12px] text-blue-500 hover:underline">+ Buat tiket ↗</a>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div *ngFor="let t of tickets" class="flex items-start gap-3">
+            <span class="text-[12px] font-bold text-blue-500 w-[64px] shrink-0">{{ t.id }}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-medium text-slate-800">{{ t.title }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ t.priority }} · Assigned: {{ t.assignee }} · {{ t.time }}</p>
+            </div>
+            <span class="text-[11px] font-semibold border rounded-full px-3 py-0.5 shrink-0 whitespace-nowrap"
+                  [ngClass]="ticketStatusClass(t.status)">{{ t.status }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Playbook -->
+      <div class="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <span class="text-[13px] font-semibold text-slate-700">🤖 AI playbook — aktivitas</span>
+          <a href="#" class="text-[12px] text-blue-500 hover:underline">Kelola ↗</a>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div *ngFor="let p of playbook" class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-base shrink-0">
+              {{ p.icon }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[13px] font-medium text-slate-800">{{ p.title }}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">{{ p.desc }}</p>
+            </div>
+            <span class="text-[11px] font-semibold px-3 py-0.5 rounded-full shrink-0"
+                  [ngClass]="playbookStatusClass(p.status)">{{ p.status }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         BOTTOM: GRADIENT SIDEBAR  +  HOST HEALTH  +  SERVER CARDS
+    ══════════════════════════════════════════════════ -->
+    <div class="flex flex-col md:flex-row rounded-2xl overflow-hidden border border-slate-200">
+
+      <!-- Left gradient panel -->
+      
+    </div>
+
   </div>
-</div>
 </div>
